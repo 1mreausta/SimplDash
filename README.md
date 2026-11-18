@@ -1,3 +1,5 @@
+<img src="docs/logo.svg" alt="SimplDash logo" width="96" align="right">
+
 # SimplDash
 
 Digitaalne näidikuplokk (race dash) MaxxECU ajule: loeb CAN-siinilt MaxxECU andmeid ja näitab neid

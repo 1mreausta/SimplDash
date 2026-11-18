@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SimplDash simulaator</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0d10'/%3E%3Cpath d='M12 44 A22 22 0 1 1 52 44' fill='none' stroke='%23262c34' stroke-width='7' stroke-linecap='round'/%3E%3Cpath d='M12 44 A22 22 0 0 1 44 15' fill='none' stroke='%2300d4ff' stroke-width='7' stroke-linecap='round'/%3E%3Cpath d='M44 15 A22 22 0 0 1 52 44' fill='none' stroke='%23ff2d2d' stroke-width='7' stroke-linecap='round' opacity='.35'/%3E%3Ccircle cx='32' cy='38' r='4' fill='%23f2f4f7'/%3E%3Cpath d='M32 38 L44 22' stroke='%23f2f4f7' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E %3Ctitle%3ESimplDash%3C/title%3E %3Crect width='64' height='64' rx='14' fill='%230b0d10'/%3E %3Cpath d='M9.1 26 A25 25 0 0 1 48 16.8' fill='none' stroke='%2300d4ff' stroke-width='4.5' stroke-linecap='round'/%3E %3Cpath d='M48 16.8 A25 25 0 0 1 54.9 26' fill='none' stroke='%23ff2d2d' stroke-width='4.5' stroke-linecap='round'/%3E %3Cpath d='M25 29 H15.5 a5 5 0 0 0 0 10 h4 a5 5 0 0 1 0 10 H10' fill='none' stroke='%23f2f4f7' stroke-width='5.5' stroke-linecap='round' stroke-linejoin='round'/%3E %3Cpath d='M33 29 H39 a10 10 0 0 1 0 20 H33 Z' fill='none' stroke='%23f2f4f7' stroke-width='5.5' stroke-linejoin='round'/%3E %3C/svg%3E">
 <style>
   :root { --bg:#0b0d10; --panel:#14181d; --line:#262c34; --text:#e8ecf0; --dim:#8a94a1; --acc:#00d4ff; --on:#22e06b; --warn:#ff4d4d; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font:15px/1.4 -apple-system, system-ui, sans-serif;
          display:flex; flex-direction:column; align-items:center; gap:14px; padding:16px; min-height:100vh; }
-  h1 { font-size:17px; font-weight:600; margin:0; color:var(--dim); letter-spacing:.04em; }
+  h1 { font-size:17px; font-weight:600; margin:0; color:var(--dim); letter-spacing:.04em; display:flex; align-items:center; gap:10px; }
   .bezel { background:#000; padding:14px; border-radius:18px; border:1px solid var(--line); width:min(100%, 1060px); }
   canvas { display:block; width:100%; aspect-ratio:1024/600; border-radius:4px; cursor:pointer; touch-action:none;
            image-rendering:auto; transition:filter .15s; }
@@ -26,7 +26,7 @@
 </style>
 </head>
 <body>
-<h1>SIMPLDASH SIMULAATOR · 1024 × 600</h1>
+<h1><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E %3Ctitle%3ESimplDash%3C/title%3E %3Crect width='64' height='64' rx='14' fill='%230b0d10'/%3E %3Cpath d='M9.1 26 A25 25 0 0 1 48 16.8' fill='none' stroke='%2300d4ff' stroke-width='4.5' stroke-linecap='round'/%3E %3Cpath d='M48 16.8 A25 25 0 0 1 54.9 26' fill='none' stroke='%23ff2d2d' stroke-width='4.5' stroke-linecap='round'/%3E %3Cpath d='M25 29 H15.5 a5 5 0 0 0 0 10 h4 a5 5 0 0 1 0 10 H10' fill='none' stroke='%23f2f4f7' stroke-width='5.5' stroke-linecap='round' stroke-linejoin='round'/%3E %3Cpath d='M33 29 H39 a10 10 0 0 1 0 20 H33 Z' fill='none' stroke='%23f2f4f7' stroke-width='5.5' stroke-linejoin='round'/%3E %3C/svg%3E" alt="" width="28" height="28">SIMPLDASH SIMULAATOR · 1024 × 600</h1>
 <div class="bezel"><canvas id="c" width="1024" height="600"></canvas></div>
 <div class="bar">
   <button id="prev">◀ Eelmine vaade<kbd>←</kbd></button>
