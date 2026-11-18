@@ -1,6 +1,4 @@
-<img src="docs/logo.svg" alt="SimplDash logo" width="96" align="right">
-
-# SimplDash
+<p align="center"><img src="docs/logo.svg" alt="SimplDash" width="440"></p>
 
 Digitaalne näidikuplokk (race dash) MaxxECU ajule: loeb CAN-siinilt MaxxECU andmeid ja näitab neid
 7" puuteekraanil. Plaat: Guition JC1060P470C (ESP32-P4, 1024×600).
@@ -109,6 +107,7 @@ Joonistab kõik vaated, ka hoiatusega. Kasutab sama UI koodi – muuda disaini j
 | `main/demo.c` | demorežiimi sõidumudel |
 | `main/dash_config.h` | **kõik seaded** |
 | `main/fonts/` | Barlow Condensed (SIL OFL litsents) |
+| `docs/logo.svg`, `docs/icon.svg` | logo (sõnamärk) ja ikoon |
 
 ## Litsents
 Kood: MIT – vt [LICENSE](LICENSE). Font Barlow Condensed: SIL Open Font License 1.1 ([main/fonts/OFL.txt](main/fonts/OFL.txt)).
