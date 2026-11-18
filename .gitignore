@@ -17,3 +17,5 @@ tools/sim/simpldash_sim
 .DS_Store
 .claude/
 .vscode/
+tools/web/obj/
+tools/web/dist/

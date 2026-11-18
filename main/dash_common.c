@@ -3,8 +3,16 @@
 #include <string.h>
 
 /* Font (Barlow Condensed Bold, OFL) manustatud püsivarasse */
+#ifdef DASH_FONT_C_ARRAY
+/* veebisimulaator: font on C-massiivina (tools/web/build.sh genereerib) */
+extern const uint8_t dash_font_ttf[];
+extern const unsigned int dash_font_ttf_len;
+#define font_ttf_start dash_font_ttf
+#define font_ttf_end   (dash_font_ttf + dash_font_ttf_len)
+#else
 extern const uint8_t font_ttf_start[] asm("_binary_BarlowCondensed_Bold_ttf_start");
 extern const uint8_t font_ttf_end[]   asm("_binary_BarlowCondensed_Bold_ttf_end");
+#endif
 
 static struct { int px; lv_font_t *f; } s_fonts[32];
 

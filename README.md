@@ -1,9 +1,11 @@
 <p align="center"><img src="docs/logo.svg" alt="SimplDash" width="440"></p>
 
+<p align="center"><b>▶ <a href="https://1mreausta.github.io/SimplDash/">Proovi simulaatorit brauseris</a></b> – töötab ka telefonis, midagi pole vaja installida.</p>
+
 Digitaalne näidikuplokk (race dash) MaxxECU ajule: loeb CAN-siinilt MaxxECU andmeid ja näitab neid
 7" puuteekraanil. Plaat: Guition JC1060P470C (ESP32-P4, 1024×600).
 
-*A race-style digital dash for MaxxECU engine controllers. Reads the MaxxECU CAN protocol and shows it on a
+*A race-style digital dash for MaxxECU engine controllers. [Try the simulator in your browser](https://1mreausta.github.io/SimplDash/). Reads the MaxxECU CAN protocol and shows it on a
 7" ESP32-P4 touch display (Guition JC1060P470C). Five swipeable views, warnings, demo mode and a desktop
 simulator. Documentation is in Estonian.*
 
@@ -89,6 +91,15 @@ Sama C-kood (kõik vaated, dekooder, demo sõidumudel) jookseb Macis ja ekraan o
 - peata: **Ctrl+C** terminalis. Muu port: `tools/sim/run.sh 8091`
 
 Vajab ainult macOS-i ja clang-i (Xcode Command Line Tools), lisateeke pole vaja.
+
+## Veebisimulaator (WebAssembly)
+Sama kood kompileeritakse WebAssembly'ks ja avaldatakse GitHub Pages'is:
+**https://1mreausta.github.io/SimplDash/** (kõik jookseb brauseris, serverit pole).
+```bash
+source ~/esp/tools/emsdk/emsdk_env.sh   # Emscripten
+tools/web/build.sh                      # → tools/web/dist/ (index.html, simpldash.js, simpldash.wasm)
+tools/web/deploy.sh                     # kompileerib ja avaldab gh-pages harusse
+```
 
 ## Eelvaade arvutis (ilma plaadita)
 ```bash
