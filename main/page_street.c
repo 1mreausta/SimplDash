@@ -1,6 +1,6 @@
 /*
  * Vaade TÄNAV: vasakult üles kaarduv astmeline tahhomeeter, kiirus paremal üleval,
- * suur käik rohelises kumas, roheline joon "sälguga", all segmentribad ja 6 väärtust.
+ * suur käik sinises kumas, sinine joon "sälguga", all segmentribad ja 6 väärtust.
  */
 #include <math.h>
 #include <stdio.h>
@@ -16,15 +16,15 @@
 #define RAMP_SEGS 22       /* mitu segmenti kaardub üles */
 #define RAMP_H    104
 
-#define LINE_Y    336      /* roheline joon */
+#define LINE_Y    336      /* sinine joon */
 #define NOTCH_Y   374
 #define STACK_N   10
 #define N_GLOW    5        /* 1 suur kast + 4 riba sälgu sees */
 #define SUN_Y     NOTCH_Y  /* kuma keskpunkt */
 #define SUN_R     360      /* kuma raadius */
 
-#define G_LINE    lv_color_hex(0x2BE36F)
-#define G_DIM     lv_color_hex(0x1F6B3A)
+#define G_LINE    C_ACCENT                 /* sama sinine nagu teistes vaadetes */
+#define G_DIM     lv_color_hex(0x0F4C5C)
 #define C_SEG_OFF lv_color_hex(0x252A30)
 
 static const dash_tile_t GRID[] = DASH_STREET_GRID;
@@ -170,7 +170,7 @@ static void create(lv_obj_t *scr)
         gly[k] = y0;
         p.glow[k] = dash_box(scr, inset, y0, W - 2 * inset, k == N_GLOW - 1 ? NOTCH_Y - y0 : strip_h, C_BG, 0);
     }
-    static const uint32_t GC[3] = { 0x1FB04F, 0xA01C1C, 0x2F7BFF };
+    static const uint32_t GC[3] = { 0x00A6D6, 0xA01C1C, 0x2F7BFF };
     for (int k = 0; k < N_GLOW; k++) {
         int rx = W / 2 - glx[k], ry = SUN_Y - gly[k];
         for (int c = 0; c < 3; c++) {
@@ -282,7 +282,7 @@ static void update(const dash_state_t *s)
     dash_set_text_if(p.gear, p.gear_txt, sizeof(p.gear_txt), buf);
     int8_t gs = s->flashing ? (s->blink_fast ? 2 : 1) : 0;
     if (gs != p.glow_st) {
-        /* 0 roheline, 1 punane, 2 sinine */
+        /* 0 sinine (tavaline), 1 punane, 2 tugev sinine (shift) */
         int c = gs == 2 ? 2 : gs == 1 ? 1 : 0;
         for (int k = 0; k < N_GLOW; k++) lv_obj_set_style_bg_grad(p.glow[k], &s_grad[k][c], 0);
         p.glow_st = gs;

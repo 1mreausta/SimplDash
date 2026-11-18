@@ -78,7 +78,7 @@ typedef struct {
  *   0 RACE    – shift lightid, segmenttahhomeeter, 14 näidikut
  *   1 KELLAD  – kaks ümarat kella (pöörded + kiirus), keskel põhinäidud
  *   2 KAAR    – suur kaartahhomeeter, kiirus keskel, 6 näidikut külgedel
- *   3 TÄNAV   – kaardus astmeline tahhomeeter, suur käik rohelises kumas, segmentribad
+ *   3 TÄNAV   – kaardus astmeline tahhomeeter, suur käik sinises kumas, segmentribad
  *   4 ANDMED  – kõik väärtused koos min/max tippudega
  */
 #define DASH_PAGE_FADE_MS  300   /* vaate vahetuse üleminek (tumeneb + heleneb), 0 = kohe */
