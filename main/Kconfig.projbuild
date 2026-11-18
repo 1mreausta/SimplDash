@@ -1,0 +1,43 @@
+menu "SimplDash"
+
+    config SIMPLDASH_CAN_TX_GPIO
+        int "CAN TX GPIO (-> SN65HVD230 D / CTX)"
+        default 45
+        help
+            ESP32-P4 GPIO, mis läheb transiiveri TX (D) sisendisse.
+            Vali vaba pinn plaadi päisest – kontrolli skeemist.
+
+    config SIMPLDASH_CAN_RX_GPIO
+        int "CAN RX GPIO (<- SN65HVD230 R / CRX)"
+        default 46
+
+    config SIMPLDASH_CAN_BITRATE
+        int "CAN bitikiirus"
+        default 500000
+        help
+            Peab klappima MTune CAN1 seadega (vaikimisi 500 kbit/s).
+
+    config SIMPLDASH_CAN_LISTEN_ONLY
+        bool "Listen-only režiim (ei kinnita kaadreid)"
+        default n
+        help
+            Lülita sisse ainult siis, kui CAN-siinil on peale ECU ja dashi veel
+            mõni seade, mis kaadreid kinnitab (ACK). Kui ECU ja dash on kahekesi,
+            JÄTA VÄLJA – muidu ECU kaadreid ei kinnitata.
+
+    config SIMPLDASH_DEMO_ON_BOOT
+        bool "Käivitu demorežiimis"
+        default n
+        help
+            Demorežiimi saab ka ekraani 3 s hoidmisega sisse/välja lülitada.
+
+    config SIMPLDASH_PAGE_BUTTON_GPIO
+        int "Vaate nupu GPIO (-1 = pole)"
+        default 47
+        range -1 54
+        help
+            Valikuline füüsiline nupp (nt roolil) vaadete vahetamiseks.
+            Nupp ühendab GPIO maaga (GND); sisemine pull-up on sees.
+            Lühike vajutus = järgmine vaade.
+
+endmenu

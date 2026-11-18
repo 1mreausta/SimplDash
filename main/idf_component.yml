@@ -1,0 +1,6 @@
+dependencies:
+  idf: ">=6.1.0,<6.2.0"
+  espressif/esp_board_manager: "==0.7.3~1"
+  guition/guition_boards: "==0.2.4"
+  espressif/esp_lvgl_port: "^2.9.0"
+  lvgl/lvgl: "^9.3.0"

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SimplDash simulaator</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0d10'/%3E%3Cpath d='M12 44 A22 22 0 1 1 52 44' fill='none' stroke='%23262c34' stroke-width='7' stroke-linecap='round'/%3E%3Cpath d='M12 44 A22 22 0 0 1 44 15' fill='none' stroke='%2300d4ff' stroke-width='7' stroke-linecap='round'/%3E%3Cpath d='M44 15 A22 22 0 0 1 52 44' fill='none' stroke='%23ff2d2d' stroke-width='7' stroke-linecap='round' opacity='.35'/%3E%3Ccircle cx='32' cy='38' r='4' fill='%23f2f4f7'/%3E%3Cpath d='M32 38 L44 22' stroke='%23f2f4f7' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+  :root { --bg:#0b0d10; --panel:#14181d; --line:#262c34; --text:#e8ecf0; --dim:#8a94a1; --acc:#00d4ff; --on:#22e06b; --warn:#ff4d4d; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.4 -apple-system, system-ui, sans-serif;
+         display:flex; flex-direction:column; align-items:center; gap:14px; padding:16px; min-height:100vh; }
+  h1 { font-size:17px; font-weight:600; margin:0; color:var(--dim); letter-spacing:.04em; }
+  .bezel { background:#000; padding:14px; border-radius:18px; border:1px solid var(--line); width:min(100%, 1060px); }
+  canvas { display:block; width:100%; aspect-ratio:1024/600; border-radius:4px; cursor:pointer; touch-action:none;
+           image-rendering:auto; transition:filter .15s; }
+  .bar { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+  button { background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:8px;
+           padding:8px 14px; font:inherit; cursor:pointer; }
+  button:hover { border-color:#3a4350; }
+  button.on { border-color:var(--on); color:var(--on); }
+  button.alert { border-color:var(--warn); color:var(--warn); }
+  kbd { font:12px ui-monospace, monospace; background:#20252c; border-radius:4px; padding:1px 5px; color:var(--dim); margin-left:6px; }
+  .help { color:var(--dim); font-size:13px; max-width:1060px; text-align:center; }
+  #status { color:var(--dim); font-size:13px; min-height:1.4em; }
+</style>
+</head>
+<body>
+<h1>SIMPLDASH SIMULAATOR · 1024 × 600</h1>
+<div class="bezel"><canvas id="c" width="1024" height="600"></canvas></div>
+<div class="bar">
+  <button id="prev">◀ Eelmine vaade<kbd>←</kbd></button>
+  <button id="next">Järgmine vaade ▶<kbd>→</kbd></button>
+  <button id="demo">Demo sõit<kbd>D</kbd></button>
+  <button id="can">CAN ühendus<kbd>C</kbd></button>
+  <button id="hot">Vesi kuumeneb üle<kbd>H</kbd></button>
+</div>
+<div id="status">ühendan…</div>
+<div class="help">Hiir = puuteekraan: <b>libista</b> vasakule/paremale = vaade · <b>klõps</b> = heledus ·
+  <b>hoia 3 s</b> = demorežiim · ANDMED vaates „NULLI TIPUD“ nupp töötab klõpsuga.</div>
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const img = ctx.createImageData(1024, 600), px = new Uint32Array(img.data.buffer);
+const st = document.getElementById('status');
+const PAGES = ['RACE', 'KELLAD', 'KAAR', 'TÄNAV', 'ANDMED'];
+let since = 0, down = false, fps = 0, frames = 0, last = performance.now();
+
+/* RGB565 → RGBA lookup */
+const R5 = new Uint8Array(32), G6 = new Uint8Array(64);
+for (let i = 0; i < 32; i++) R5[i] = (i * 527 + 23) >> 6;
+for (let i = 0; i < 64; i++) G6[i] = (i * 259 + 33) >> 6;
+
+async function loop() {
+  try {
+    const r = await fetch('/frame?since=' + since);
+    since = +r.headers.get('X-Frame');
+    const b = +r.headers.get('X-Bright');
+    const [demo, can, hot, page] = (r.headers.get('X-State') || '0,1,0,0').split(',').map(Number);
+    cv.style.filter = 'brightness(' + (0.25 + 0.75 * b / 100) + ')';
+    set('demo', demo, 'on'); set('can', can, 'on'); set('hot', hot, 'alert');
+    const buf = await r.arrayBuffer();
+    if (buf.byteLength === 1024 * 600 * 2) {
+      const s = new Uint16Array(buf);
+      for (let i = 0; i < s.length; i++) {
+        const v = s[i];
+        px[i] = 0xff000000 | (R5[v & 31] << 16) | (G6[(v >> 5) & 63] << 8) | R5[v >> 11];
+      }
+      ctx.putImageData(img, 0, 0);
+      frames++;
+    }
+    const now = performance.now();
+    if (now - last > 1000) { fps = frames; frames = 0; last = now; }
+    st.textContent = 'vaade: ' + (PAGES[page] || page) + ' · heledus ' + b + ' % · ' + fps + ' kaadrit/s';
+  } catch (e) {
+    st.textContent = 'simulaator ei vasta – kas tools/sim/run.sh töötab?';
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  setTimeout(loop, 30);
+}
+function set(id, on, cls) { document.getElementById(id).classList.toggle(cls, !!on); }
+
+function pos(e) {
+  const r = cv.getBoundingClientRect();
+  return [Math.round((e.clientX - r.left) * 1024 / r.width), Math.round((e.clientY - r.top) * 600 / r.height)];
+}
+function send(e, p) { const [x, y] = pos(e); fetch('/in?x=' + x + '&y=' + y + '&p=' + p); }
+let lastMove = 0;
+cv.addEventListener('pointerdown', e => { down = true; cv.setPointerCapture(e.pointerId); send(e, 1); });
+cv.addEventListener('pointermove', e => { if (down && performance.now() - lastMove > 30) { lastMove = performance.now(); send(e, 1); } });
+cv.addEventListener('pointerup', e => { if (down) { down = false; send(e, 0); } });
+cv.addEventListener('pointercancel', e => { if (down) { down = false; send(e, 0); } });
+
+const key = k => fetch('/key?k=' + k);
+document.getElementById('prev').onclick = () => key('prev');
+document.getElementById('next').onclick = () => key('next');
+document.getElementById('demo').onclick = () => key('demo');
+document.getElementById('can').onclick = () => key('can');
+document.getElementById('hot').onclick = () => key('hot');
+addEventListener('keydown', e => {
+  const m = { ArrowLeft: 'prev', ArrowRight: 'next', d: 'demo', D: 'demo', c: 'can', C: 'can', h: 'hot', H: 'hot' }[e.key];
+  if (m) { e.preventDefault(); key(m); }
+});
+loop();
+</script>
+</body>
+</html>

@@ -1,0 +1,309 @@
+/*
+ * SimplDash kasutajaliides (LVGL 9), 1024x600 – tuum.
+ * Vaated on failides page_*.c. Siin: vaadete vahetus, puudutused, hoiatused ja
+ * ühised kihid (hoiatusriba, punane raam, "ECU ühendus puudub", DEMO märk).
+ */
+#include "dash_ui.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "dash_common.h"
+#include "demo.h"
+#include "esp_timer.h"
+
+static const dash_page_t *const PAGES[] = { &page_race, &page_gauges, &page_sweep, &page_street, &page_data };
+#define N_PAGES ((int)(sizeof(PAGES) / sizeof(PAGES[0])))
+
+static const dash_warning_t WARN[] = DASH_WARNINGS;
+#define N_WARN (sizeof(WARN) / sizeof(WARN[0]))
+_Static_assert(N_WARN <= DASH_MAX_WARN, "liiga palju hoiatusi (DASH_MAX_WARN)");
+
+static const uint8_t BRIGHT[] = DASH_BRIGHTNESS_LEVELS;
+
+/* Libistamise lävi (px) ja puudutuse lubatud liikumine */
+#define SWIPE_MIN_PX  90
+#define TAP_MAX_PX    30
+
+static struct {
+    dash_ui_cfg_t cfg;
+    lv_obj_t *page_obj[N_PAGES];
+    int       page;
+    int       pending_step;
+    lv_obj_t *warn_box, *warn_lbl, *alarm_frame;
+    char      warn_txt[96];
+    lv_obj_t *nocomm, *demo_badge;
+    lv_obj_t *toast, *toast_lbl, *toast_dots[N_PAGES];
+    int64_t   toast_until_us;
+    int       bright_idx;
+    int64_t   press_start_us;
+    lv_point_t press_pt;
+    int       rev_limit;
+    lv_obj_t *fade;          /* must kiht vaadete vahetamise sujuvaks üleminekuks */
+    int       fade_target;   /* -1 = üleminekut pole käimas */
+    bool      fade_dark;     /* true = vaade on vahetatud, nüüd heledamaks */
+} ui;
+
+/* ---------------------------------------------------------------------- */
+static void show_toast(void)
+{
+    lv_label_set_text(ui.toast_lbl, PAGES[ui.page]->name);
+    for (int i = 0; i < N_PAGES; i++) {
+        lv_obj_set_style_bg_color(ui.toast_dots[i], i == ui.page ? C_ACCENT : lv_color_hex(0x3A414B), 0);
+    }
+    lv_obj_set_hidden(ui.toast, false);
+    ui.toast_until_us = esp_timer_get_time() + 1200000;
+}
+
+static void open_page(int page, bool notify)
+{
+    page = ((page % N_PAGES) + N_PAGES) % N_PAGES;
+    for (int i = 0; i < N_PAGES; i++) lv_obj_set_hidden(ui.page_obj[i], i != page);
+    bool changed = page != ui.page;
+    ui.page = page;
+    lv_obj_align(ui.warn_box, LV_ALIGN_TOP_MID, 0, PAGES[page]->warn_y);
+    if (changed && notify) {
+        show_toast();
+        if (ui.cfg.on_page) ui.cfg.on_page(page);
+    }
+}
+
+/* --- üleminek: vana vaade tumeneb mustaks, vahetus, uus vaade heleneb ---------------- */
+static void fade_exec(void *obj, int32_t v)
+{
+    lv_obj_set_style_bg_opa(obj, (lv_opa_t)v, 0);
+}
+
+static void fade_start(int32_t from, int32_t to);
+
+static void fade_done(lv_anim_t *a)
+{
+    (void)a;
+    if (!ui.fade_dark) {
+        /* täiesti must: vaheta vaade ja hakka helenema */
+        open_page(ui.fade_target, true);
+        ui.fade_dark = true;
+        fade_start(LV_OPA_COVER, LV_OPA_TRANSP);
+    } else {
+        lv_obj_set_hidden(ui.fade, true);
+        ui.fade_target = -1;
+    }
+}
+
+static void fade_start(int32_t from, int32_t to)
+{
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_var(&a, ui.fade);
+    lv_anim_set_exec_cb(&a, fade_exec);
+    lv_anim_set_values(&a, from, to);
+    int32_t ms = DASH_PAGE_FADE_MS / 2 * (from > to ? from - to : to - from) / LV_OPA_COVER;
+    lv_anim_set_duration(&a, ms > 0 ? ms : 1);
+    lv_anim_set_path_cb(&a, lv_anim_path_ease_in_out);
+    lv_anim_set_completed_cb(&a, fade_done);
+    lv_anim_start(&a);
+}
+
+/* vaade, kuhu parajasti minnakse (ka ülemineku ajal) */
+static int target_page(void)
+{
+    return ui.fade_target >= 0 ? ui.fade_target : ui.page;
+}
+
+void dash_ui_set_page(int page)
+{
+    page = ((page % N_PAGES) + N_PAGES) % N_PAGES;
+    if (DASH_PAGE_FADE_MS <= 0 || !ui.fade) {
+        open_page(page, true);
+        return;
+    }
+    if (page == target_page()) return;
+    ui.fade_target = page;
+    /* jätka praegusest heledusest (kui üleminek juba käib, ei hüppa) */
+    int32_t cur = lv_obj_is_hidden(ui.fade) ? LV_OPA_TRANSP : lv_obj_get_style_bg_opa(ui.fade, 0);
+    lv_anim_delete(ui.fade, fade_exec);
+    lv_obj_set_hidden(ui.fade, false);
+    ui.fade_dark = false;
+    fade_start(cur, LV_OPA_COVER);
+}
+
+void dash_ui_request_page_step(int dir)
+{
+    __atomic_fetch_add(&ui.pending_step, dir, __ATOMIC_RELAXED);  /* ui_tick tarbib */
+}
+
+int dash_ui_page_count(void)
+{
+    return N_PAGES;
+}
+
+/* ---------------------------------------------------------------------- */
+static void on_screen_event(lv_event_t *e)
+{
+    lv_event_code_t c = lv_event_get_code(e);
+    lv_indev_t *indev = lv_indev_active();
+    lv_point_t pt = { 0, 0 };
+    if (indev) lv_indev_get_point(indev, &pt);
+
+    if (c == LV_EVENT_PRESSED) {
+        ui.press_start_us = esp_timer_get_time();
+        ui.press_pt = pt;
+    } else if (c == LV_EVENT_RELEASED) {
+        int64_t ms = (esp_timer_get_time() - ui.press_start_us) / 1000;
+        int dx = pt.x - ui.press_pt.x, dy = pt.y - ui.press_pt.y;
+        if (abs(dx) >= SWIPE_MIN_PX && abs(dx) > abs(dy)) {
+            /* libistamine: vasakule = järgmine vaade */
+            dash_ui_set_page(target_page() + (dx < 0 ? 1 : -1));
+        } else if (abs(dx) > TAP_MAX_PX || abs(dy) > TAP_MAX_PX) {
+            /* pooleli jäänud libistus – ei tee midagi */
+        } else if (ms >= 2500) {
+            /* pikk vajutus: demorežiim sisse/välja */
+            demo_set_enabled(!demo_is_enabled());
+        } else if (ms < 600 && ui.cfg.on_brightness) {
+            /* lühike puudutus: heledus */
+            ui.bright_idx = (ui.bright_idx + 1) % (int)sizeof(BRIGHT);
+            ui.cfg.on_brightness(BRIGHT[ui.bright_idx]);
+        }
+    }
+}
+
+static void ui_tick(lv_timer_t *tm)
+{
+    (void)tm;
+    static dash_state_t s;
+    maxxecu_snapshot(&s.d);
+    int64_t now = esp_timer_get_time();
+    s.stale = s.d.frame_count == 0 || (now - s.d.last_rx_us) > (int64_t)DASH_COMM_TIMEOUT_MS * 1000;
+    s.blink = (now / 250000) % 2;
+    s.blink_fast = (now / 80000) % 2;
+    s.rpm = s.d.valid[SIG_RPM] ? s.d.v[SIG_RPM] : 0;
+    s.flashing = s.rpm >= DASH_SHIFT_FLASH;
+    if (s.d.valid[SIG_REVLIMIT_RPM] && s.d.v[SIG_REVLIMIT_RPM] > 1000) {
+        ui.rev_limit = (int)s.d.v[SIG_REVLIMIT_RPM];
+    }
+    s.rev_limit = ui.rev_limit;
+
+    /* nupust tulnud vaatevahetus */
+    int step = __atomic_exchange_n(&ui.pending_step, 0, __ATOMIC_RELAXED);
+    if (step) {
+        dash_ui_set_page(target_page() + step);
+    }
+    if (ui.toast_until_us && now > ui.toast_until_us) {
+        lv_obj_set_hidden(ui.toast, true);
+        ui.toast_until_us = 0;
+    }
+
+    lv_obj_set_hidden(ui.nocomm, !s.stale);
+    lv_obj_set_hidden(ui.demo_badge, !demo_is_enabled());
+
+    /* hoiatused */
+    char wtxt[96] = "";
+    int nw = 0;
+    for (size_t i = 0; i < N_WARN; i++) {
+        const dash_warning_t *w = &WARN[i];
+        s.warn[i] = false;
+        if (s.stale || !s.d.valid[w->sig] || (w->min_rpm > 0 && s.rpm < w->min_rpm)) continue;
+        float v = s.d.v[w->sig];
+        if ((!isnan(w->high) && v > w->high) || (!isnan(w->low) && v < w->low)) {
+            s.warn[i] = true;
+            size_t len = strlen(wtxt);
+            snprintf(wtxt + len, sizeof(wtxt) - len, "%s%s", nw ? "  ·  " : "", w->label);
+            nw++;
+        }
+    }
+    if (nw) dash_set_text_if(ui.warn_lbl, ui.warn_txt, sizeof(ui.warn_txt), wtxt);
+    lv_obj_set_hidden(ui.warn_box, !(nw && s.blink));
+    lv_obj_set_hidden(ui.alarm_frame, !(nw && s.blink));
+
+    for (int i = 0; i < N_PAGES; i++) {
+        if (PAGES[i]->background) PAGES[i]->background(&s);
+    }
+    PAGES[ui.page]->update(&s);
+}
+
+/* ---------------------------------------------------------------------- */
+void dash_ui_create(const dash_ui_cfg_t *cfg)
+{
+    memset(&ui, 0, sizeof(ui));
+    if (cfg) ui.cfg = *cfg;
+    ui.rev_limit = DASH_RPM_MAX - 500;
+
+    lv_obj_t *scr = lv_screen_active();
+    lv_obj_remove_style_all(scr);
+    lv_obj_set_style_bg_color(scr, C_BG, 0);
+    lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
+    lv_obj_set_scrollable(scr, false);
+    lv_obj_add_event_cb(scr, on_screen_event, LV_EVENT_PRESSED, NULL);
+    lv_obj_add_event_cb(scr, on_screen_event, LV_EVENT_RELEASED, NULL);
+
+    for (int i = 0; i < N_PAGES; i++) {
+        lv_obj_t *o = dash_box(scr, 0, 0, W, H, C_BG, 0);
+        lv_obj_set_style_bg_opa(o, LV_OPA_TRANSP, 0);
+        PAGES[i]->create(o);
+        lv_obj_set_hidden(o, true);
+        ui.page_obj[i] = o;
+    }
+
+    /* Üleminek: must kiht vaadete peal, hoiatused jäävad selle peale nähtavaks */
+    ui.fade_target = -1;
+    ui.fade = dash_box(scr, 0, 0, W, H, C_BG, 0);
+    lv_obj_set_style_bg_opa(ui.fade, LV_OPA_TRANSP, 0);
+    lv_obj_set_hidden(ui.fade, true);
+
+    /* Hoiatuse raam + ribateade */
+    ui.alarm_frame = dash_box(scr, 0, 0, W, H, C_BG, 4);
+    lv_obj_set_style_bg_opa(ui.alarm_frame, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_color(ui.alarm_frame, C_RED, 0);
+    lv_obj_set_style_border_width(ui.alarm_frame, 7, 0);
+    lv_obj_set_hidden(ui.alarm_frame, true);
+
+    ui.warn_box = dash_box(scr, 0, 0, 10, 10, C_RED, 12);
+    lv_obj_set_size(ui.warn_box, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_style_pad_hor(ui.warn_box, 30, 0);
+    lv_obj_set_style_pad_ver(ui.warn_box, 2, 0);
+    ui.warn_lbl = dash_label(ui.warn_box, 44, C_TEXT, "");
+    lv_obj_center(ui.warn_lbl);
+    lv_obj_set_hidden(ui.warn_box, true);
+
+    /* Demo märk */
+    ui.demo_badge = dash_box(scr, W - 92, 4, 80, 26, C_YELLOW, 5);
+    lv_obj_t *dl = dash_label(ui.demo_badge, 16, C_BG, "DEMO");
+    lv_obj_center(dl);
+    lv_obj_set_hidden(ui.demo_badge, true);
+
+    /* Ühendus puudub */
+    ui.nocomm = dash_box(scr, 0, 0, W, H, C_BG, 0);
+    lv_obj_set_style_bg_opa(ui.nocomm, LV_OPA_80, 0);
+    lv_obj_t *nc1 = dash_label(ui.nocomm, 44, C_YELLOW, "ECU ÜHENDUS PUUDUB");
+    lv_obj_align(nc1, LV_ALIGN_CENTER, 0, -20);
+    lv_obj_t *nc2 = dash_label(ui.nocomm, 17, C_DIM,
+                               "ootan CAN andmeid…   hoia ekraani 3 s = demorežiim  ·  libista = vaade");
+    lv_obj_align(nc2, LV_ALIGN_CENTER, 0, 30);
+
+    /* Vaate nimi + täpid (näidatakse vahetamisel 1,2 s), kõige peal */
+    ui.toast = dash_box(scr, 0, 0, 10, 10, lv_color_hex(0x0E1116), 14);
+    lv_obj_set_size(ui.toast, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_style_border_color(ui.toast, lv_color_hex(0x2B3139), 0);
+    lv_obj_set_style_border_width(ui.toast, 1, 0);
+    lv_obj_set_style_pad_hor(ui.toast, 28, 0);
+    lv_obj_set_style_pad_ver(ui.toast, 10, 0);
+    lv_obj_set_flex_flow(ui.toast, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(ui.toast, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_row(ui.toast, 8, 0);
+    ui.toast_lbl = dash_label(ui.toast, 40, C_TEXT, "");
+    lv_obj_t *dots = lv_obj_create(ui.toast);
+    lv_obj_remove_style_all(dots);
+    lv_obj_set_size(dots, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_flex_flow(dots, LV_FLEX_FLOW_ROW);
+    lv_obj_set_style_pad_column(dots, 10, 0);
+    lv_obj_set_scrollable(dots, false);
+    lv_obj_set_clickable(dots, false);
+    for (int i = 0; i < N_PAGES; i++) ui.toast_dots[i] = dash_box(dots, 0, 0, 12, 12, C_DIM, 6);
+    lv_obj_align(ui.toast, LV_ALIGN_BOTTOM_MID, 0, -110);
+    lv_obj_set_hidden(ui.toast, true);
+
+    ui.page = -1;
+    open_page(ui.cfg.start_page >= 0 && ui.cfg.start_page < N_PAGES ? ui.cfg.start_page : 0, false);
+
+    lv_timer_create(ui_tick, DASH_UI_PERIOD_MS, NULL);
+}

@@ -1,0 +1,19 @@
+# ESP-IDF ehitus ja allalaaditud komponendid
+build/
+managed_components/
+sdkconfig
+sdkconfig.old
+build.log
+# plaaditoe genereeritud kood (idf.py bmgr -b jc1060p470_i_w_y)
+components/gen_bmgr_codes/
+
+# arvuti eelvaade ja simulaator
+tools/preview/obj/
+tools/preview/out/
+tools/preview/dashsim
+tools/sim/simpldash_sim
+
+# muu
+.DS_Store
+.claude/
+.vscode/
