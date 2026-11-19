@@ -156,4 +156,4 @@ static void update(const dash_state_t *s)
     dash_flags_update(&p.flags, s);
 }
 
-const dash_page_t page_race = { "RACE", 132, create, update, NULL };
+const dash_page_t page_race = { "RACE", 132, create, update, NULL, NULL, 664, 137, 292, 134 };

@@ -77,13 +77,16 @@ EMSCRIPTEN_KEEPALIVE void sim_key(int k)
     case 3: demo_set_enabled(!demo_is_enabled()); break;
     case 4: s_can = !s_can; break;
     case 5: demo_set_overheat(!demo_is_overheat()); break;
+    case 6: dash_ui_set_speed_source((dash_ui_get_speed_source() + 1) % 3); break;
+    case 7: demo_set_gps(!demo_is_gps()); break;
     }
 }
 
-/* bitid: 0 demo, 1 CAN, 2 kuum, 4..7 vaade, 8..15 heledus */
+/* bitid: 0 demo, 1 CAN, 2 kuum, 3 GPS, 4..7 vaade, 8..15 heledus, 16..17 kiiruse allikas */
 EMSCRIPTEN_KEEPALIVE int sim_state(void)
 {
-    return demo_is_enabled() | (s_can << 1) | (demo_is_overheat() << 2) | (s_page << 4) | (s_bright << 8);
+    return demo_is_enabled() | (s_can << 1) | (demo_is_overheat() << 2) | (demo_is_gps() << 3) | (s_page << 4) |
+           (s_bright << 8) | (dash_ui_get_speed_source() << 16);
 }
 
 EMSCRIPTEN_KEEPALIVE uint16_t *sim_fb(void) { return s_fb; }
@@ -133,6 +136,7 @@ int main(void)
     const dash_ui_cfg_t cfg = { .on_brightness = on_bright, .on_page = on_page, .start_page = 0 };
     dash_ui_create(&cfg);
     demo_set_enabled(true);
+    demo_set_gps(true);
 
     emscripten_set_main_loop(loop, 0, false);
     return 0;

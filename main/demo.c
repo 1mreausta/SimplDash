@@ -1,18 +1,100 @@
 #include "demo.h"
 #include <math.h>
+#include <stdio.h>
+#include <string.h>
+#include <time.h>
 #include "esp_random.h"
+#include "gps.h"
 #include "maxxecu.h"
 #ifndef DASH_HOST
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #endif
 
-static volatile bool s_on, s_hot;
+static volatile bool s_on, s_hot, s_gps;
 
 void demo_set_enabled(bool on) { s_on = on; }
 bool demo_is_enabled(void) { return s_on; }
 void demo_set_overheat(bool on) { s_hot = on; }
 bool demo_is_overheat(void) { return s_hot; }
+
+/* --- võlts-GPS: auto sõidab ovaalsel rajal, NMEA laused lähevad päris parserisse --- */
+#define TRACK_LS   250.0      /* sirge pikkus (m) */
+#define TRACK_R    70.0       /* kurvi raadius (m) */
+#define TRACK_LAT0 59.3950    /* raja keskpunkt */
+#define TRACK_LON0 24.6650
+static double s_dist;          /* läbitud teekond rajal (m) */
+static time_t s_gps_t0;
+static float  s_gps_since;
+
+void demo_set_gps(bool on)
+{
+    s_gps = on;
+    if (on) { s_gps_t0 = time(NULL); s_gps_since = -1; }
+    else gps_reset();
+}
+bool demo_is_gps(void) { return s_gps; }
+
+/* asukoht (m, ida/põhi) ja sõidusuund raja teekonna järgi; algus = start/finiš */
+static void track_pos(double d, double *x, double *y, double *course)
+{
+    const double L = 2 * TRACK_LS + 2 * M_PI * TRACK_R;
+    d = fmod(d, L);
+    if (d < TRACK_LS) {                                   /* parem sirge, põhja */
+        *x = TRACK_R; *y = -TRACK_LS / 2 + d; *course = 0;
+        return;
+    }
+    d -= TRACK_LS;
+    if (d < M_PI * TRACK_R) {                             /* ülemine kurv */
+        double a = d / TRACK_R;
+        *x = TRACK_R * cos(a); *y = TRACK_LS / 2 + TRACK_R * sin(a);
+        *course = fmod(360 - a * 180 / M_PI, 360);
+        return;
+    }
+    d -= M_PI * TRACK_R;
+    if (d < TRACK_LS) {                                   /* vasak sirge, lõunasse */
+        *x = -TRACK_R; *y = TRACK_LS / 2 - d; *course = 180;
+        return;
+    }
+    d -= TRACK_LS;
+    double a = M_PI + d / TRACK_R;                        /* alumine kurv */
+    *x = TRACK_R * cos(a); *y = -TRACK_LS / 2 + TRACK_R * sin(a);
+    *course = fmod(360 + 180 - (a - M_PI) * 180 / M_PI, 360);
+}
+
+static void nmea_send(char *body)
+{
+    uint8_t sum = 0;
+    for (char *c = body; *c; c++) sum ^= (uint8_t)*c;
+    char line[192];
+    int n = snprintf(line, sizeof(line), "$%s*%02X\r\n", body, sum);
+    if (n < 0 || n >= (int)sizeof(line)) return;
+    gps_feed(line, (size_t)n);
+}
+
+static void gps_emit(float t_now, float speed_kmh)
+{
+    if (s_gps_since < 0) s_gps_since = t_now;
+    double x, y, course;
+    track_pos(s_dist, &x, &y, &course);
+    double lat = TRACK_LAT0 + y / 110540.0;
+    double lon = TRACK_LON0 + x / (111320.0 * cos(TRACK_LAT0 * M_PI / 180));
+    double secs = (double)s_gps_t0 + (t_now - s_gps_since);
+    time_t ts = (time_t)secs;
+    struct tm tm;
+    gmtime_r(&ts, &tm);
+    int cs = (int)((secs - (double)ts) * 100);
+    char hms[32], date[24], la[24], lo[24], body[176];
+    snprintf(hms, sizeof(hms), "%02d%02d%02d.%02d", tm.tm_hour, tm.tm_min, tm.tm_sec, cs);
+    snprintf(date, sizeof(date), "%02d%02d%02d", tm.tm_mday, tm.tm_mon + 1, tm.tm_year % 100);
+    int ld = (int)lat, od = (int)lon;
+    snprintf(la, sizeof(la), "%02d%08.5f", ld, (lat - ld) * 60);
+    snprintf(lo, sizeof(lo), "%03d%08.5f", od, (lon - od) * 60);
+    snprintf(body, sizeof(body), "GNRMC,%s,A,%s,N,%s,E,%.2f,%.1f,%s,,,A", hms, la, lo, speed_kmh / 1.852, course, date);
+    nmea_send(body);
+    snprintf(body, sizeof(body), "GNGGA,%s,%s,N,%s,E,1,14,0.7,42.0,M,18.0,M,,", hms, la, lo);
+    nmea_send(body);
+}
 
 static float rnd(float a, float b)
 {
@@ -104,6 +186,9 @@ void demo_step(void)
                 maxxecu_decode(*id, buf, 8);
             }
         }
+        /* GPS: teekond rajal + 10 Hz NMEA */
+        s_dist += speed / 3.6f * dt;
+        if (s_gps && tick % 5 == 0) gps_emit(t, speed + rnd(-0.15f, 0.15f) * (speed > 1));
         tick++;
     }
 }

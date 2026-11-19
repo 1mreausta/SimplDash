@@ -40,4 +40,25 @@ menu "SimplDash"
             Nupp ühendab GPIO maaga (GND); sisemine pull-up on sees.
             Lühike vajutus = järgmine vaade.
 
+    config SIMPLDASH_GPS_RX_GPIO
+        int "GPS RX GPIO (<- GPS mooduli TX), -1 = GPS puudub"
+        default -1
+        range -1 54
+        help
+            Nt Ebyte E108-GN04G-TTL: mooduli TX juhe sellesse GPIO-sse (3,3 V loogika).
+            Vali vaba pinn plaadi päisest.
+
+    config SIMPLDASH_GPS_TX_GPIO
+        int "GPS TX GPIO (-> GPS mooduli RX), -1 = ei kasuta"
+        default -1
+        range -1 54
+        help
+            Valikuline: vajalik ainult mooduli seadistamiseks (nt uuendussagedus).
+
+    config SIMPLDASH_GPS_BAUD
+        int "GPS UART kiirus"
+        default 38400
+        help
+            E108-GN04G vaikimisi 38400.
+
 endmenu

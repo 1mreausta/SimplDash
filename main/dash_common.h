@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include "lvgl.h"
 #include "dash_config.h"
+#include "gps.h"
 #include "maxxecu.h"
 
 #define W 1024
@@ -39,6 +40,11 @@ typedef struct {
     float rpm;
     int   rev_limit;
     bool  warn[DASH_MAX_WARN];
+    gps_data_t gps;     /* GPS olek */
+    bool  gps_ok;       /* GPS on ühendatud (NMEA saabub) */
+    bool  speed_gps;    /* d.v[SIG_SPEED] tuleb praegu GPS-ist */
+    int   speed_src;    /* DASH_SPEED_ECU / _GPS / _AUTO */
+    int64_t now_us;
 } dash_state_t;
 
 /* Vaade */
@@ -48,9 +54,20 @@ typedef struct {
     void (*create)(lv_obj_t *parent);
     void (*update)(const dash_state_t *s);        /* ainult kui vaade on nähtav */
     void (*background)(const dash_state_t *s);    /* alati (võib olla NULL) */
+    bool (*available)(const dash_state_t *s);     /* NULL = alati; nt ainult GPS-iga */
+    int16_t gps_x, gps_y;                         /* GPS ikooni asukoht selles vaates */
+    int16_t clock_x, clock_y;                     /* kella asukoht */
 } dash_page_t;
 
-extern const dash_page_t page_race, page_gauges, page_sweep, page_street, page_data;
+extern const dash_page_t page_race, page_gauges, page_sweep, page_street, page_data,
+                         page_accel, page_lap;
+
+/* Kas GPS on ühendatud (vaadete "available" jaoks) */
+bool dash_need_gps(const dash_state_t *s);
+/* Aeg kujul m:ss.cc või ss.cc */
+void dash_fmt_time(float sec, bool minutes, char *buf, size_t cap);
+/* Nupp (vajutatav) */
+lv_obj_t *dash_button(lv_obj_t *parent, const char *txt, int x, int y, int w, int h, lv_event_cb_t cb);
 
 /* Font Barlow Condensed Bold soovitud suuruses (loob esimesel korral) */
 lv_font_t *dash_font(int px);

@@ -6,6 +6,7 @@
 #include "dash_ui.h"
 #include "demo.h"
 #include "dev_display_lcd.h"
+#include "gps.h"
 #include "dev_lcd_touch.h"
 #include "dev_ledc_ctrl.h"
 #include "driver/gpio.h"
@@ -177,6 +178,7 @@ void app_main(void)
 #if CONFIG_SIMPLDASH_DEMO_ON_BOOT
     demo_set_enabled(true);
 #endif
+    gps_start();  /* ainult kui SIMPLDASH_GPS_RX_GPIO >= 0 */
     if (can_rx_start() != ESP_OK) {
         ESP_LOGE(TAG, "CAN ei käivitunud – kontrolli GPIO seadeid (idf.py menuconfig → SimplDash)");
     }

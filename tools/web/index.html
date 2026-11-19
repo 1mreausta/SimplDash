@@ -43,15 +43,19 @@
   <button id="demo">Demo sõit<kbd>D</kbd></button>
   <button id="can">CAN ühendus<kbd>C</kbd></button>
   <button id="hot">Vesi kuumeneb üle<kbd>H</kbd></button>
+  <button id="gps">GPS ühendatud<kbd>G</kbd></button>
+  <button id="src">Kiirus: AUTO<kbd>S</kbd></button>
 </div>
 <div id="status">laadin…</div>
 <div class="help">Sama kood, mis jookseb päris dashi plaadil (ESP32-P4), siin brauseris (WebAssembly). Hiir = puuteekraan: <b>libista</b> vasakule/paremale = vaade · <b>klõps</b> = heledus ·
-  <b>hoia 3 s</b> = demorežiim · ANDMED vaates „NULLI TIPUD“ nupp töötab klõpsuga. · <a href="https://github.com/1mreausta/SimplDash">GitHub</a></div>
+  <b>hoia 3 s</b> = demorežiim · GPS-iga lisanduvad vaated 0–100 ja RING ning kell · ANDMED vaates „NULLI TIPUD“ nupp töötab klõpsuga. · <a href="https://github.com/1mreausta/SimplDash">GitHub</a></div>
 <script>
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 const img = ctx.createImageData(1024, 600), px = new Uint32Array(img.data.buffer);
 const st = document.getElementById('status');
-const PAGES = ['RACE', 'KELLAD', 'KAAR', 'TÄNAV', 'ANDMED'];
+const PAGES = ['RACE', 'KELLAD', 'KAAR', 'TÄNAV', '0–100', 'RING', 'ANDMED'];
+const SRC = ['ECU', 'GPS', 'AUTO'];
+function setSrc(v) { const b = document.getElementById('src'); b.firstChild.nodeValue = 'Kiirus: ' + SRC[v]; }
 let down = false, lastFrame = 0, fps = 0, frames = 0, last = performance.now();
 
 /* RGB565 -> RGBA */
@@ -77,9 +81,9 @@ function draw() {
     frames++;
   }
   const state = Module._sim_state();
-  const bright = state >> 8, page = (state >> 4) & 15;
+  const bright = (state >> 8) & 255, page = (state >> 4) & 15;
   cv.style.filter = 'brightness(' + (0.25 + 0.75 * bright / 100) + ')';
-  set('demo', state & 1, 'on'); set('can', state & 2, 'on'); set('hot', state & 4, 'alert');
+  set('demo', state & 1, 'on'); set('can', state & 2, 'on'); set('hot', state & 4, 'alert'); set('gps', state & 8, 'on'); setSrc((state >> 16) & 3);
   const now = performance.now();
   if (now - last > 1000) { fps = frames; frames = 0; last = now; }
   st.textContent = 'vaade: ' + (PAGES[page] || page) + ' · heledus ' + bright + ' % · ' + fps + ' kaadrit/s';
@@ -97,11 +101,11 @@ cv.addEventListener('pointermove', e => { if (down) send(e, 1); });
 cv.addEventListener('pointerup', e => { if (down) { down = false; send(e, 0); } });
 cv.addEventListener('pointercancel', e => { if (down) { down = false; send(e, 0); } });
 
-const KEYS = { next: 1, prev: 2, demo: 3, can: 4, hot: 5 };
+const KEYS = { next: 1, prev: 2, demo: 3, can: 4, hot: 5, src: 6, gps: 7 };
 const key = k => Module._sim_key && Module._sim_key(KEYS[k]);
-for (const id of ['prev', 'next', 'demo', 'can', 'hot']) document.getElementById(id).onclick = () => key(id);
+for (const id of ['prev', 'next', 'demo', 'can', 'hot', 'gps', 'src']) document.getElementById(id).onclick = () => key(id);
 addEventListener('keydown', e => {
-  const m = { ArrowLeft: 'prev', ArrowRight: 'next', d: 'demo', D: 'demo', c: 'can', C: 'can', h: 'hot', H: 'hot' }[e.key];
+  const m = { ArrowLeft: 'prev', ArrowRight: 'next', d: 'demo', D: 'demo', c: 'can', C: 'can', h: 'hot', H: 'hot', g: 'gps', G: 'gps', s: 'src', S: 'src' }[e.key];
   if (m) { e.preventDefault(); key(m); }
 });
 

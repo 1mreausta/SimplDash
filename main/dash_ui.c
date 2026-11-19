@@ -13,7 +13,8 @@
 #include "esp_timer.h"
 #include "version.h"
 
-static const dash_page_t *const PAGES[] = { &page_race, &page_gauges, &page_sweep, &page_street, &page_data };
+static const dash_page_t *const PAGES[] = { &page_race, &page_gauges, &page_sweep, &page_street,
+                                             &page_accel, &page_lap, &page_data };
 #define N_PAGES ((int)(sizeof(PAGES) / sizeof(PAGES[0])))
 
 static const dash_warning_t WARN[] = DASH_WARNINGS;
@@ -46,6 +47,14 @@ static struct {
     lv_obj_t *boot, *boot_content, *boot_dots[15];   /* käivitusekraan */
     int8_t    boot_lit;
     bool      booting;
+    /* GPS */
+    int       speed_src;
+    lv_obj_t *gps_box, *gps_lbl, *clock_lbl;
+    char      gps_txt[16], clock_txt[8];
+    int8_t    gps_col;
+    bool      gps_seen;
+    bool      avail[N_PAGES];
+    int64_t   start_us;
 } ui;
 
 extern const lv_image_dsc_t boot_logo;  /* boot_logo.c (tools/logo/make_boot_logo.py) */
@@ -55,6 +64,7 @@ static void show_toast(void)
 {
     lv_label_set_text(ui.toast_lbl, PAGES[ui.page]->name);
     for (int i = 0; i < N_PAGES; i++) {
+        lv_obj_set_hidden(ui.toast_dots[i], !ui.avail[i] && i != ui.page);
         lv_obj_set_style_bg_color(ui.toast_dots[i], i == ui.page ? C_ACCENT : lv_color_hex(0x3A414B), 0);
     }
     lv_obj_set_hidden(ui.toast, false);
@@ -68,6 +78,10 @@ static void open_page(int page, bool notify)
     bool changed = page != ui.page;
     ui.page = page;
     lv_obj_align(ui.warn_box, LV_ALIGN_TOP_MID, 0, PAGES[page]->warn_y);
+    if (ui.gps_box) {
+        lv_obj_set_pos(ui.gps_box, PAGES[page]->gps_x, PAGES[page]->gps_y);
+        lv_obj_set_pos(ui.clock_lbl, PAGES[page]->clock_x, PAGES[page]->clock_y);
+    }
     if (changed && notify) {
         show_toast();
         if (ui.cfg.on_page) ui.cfg.on_page(page);
@@ -219,6 +233,65 @@ int dash_ui_page_count(void)
     return N_PAGES;
 }
 
+/* järgmine saadaval vaade suunas dir (GPS-vaated jäävad vahele, kui GPS-i pole) */
+static int page_from(int from, int dir)
+{
+    int p = from;
+    for (int i = 0; i < N_PAGES; i++) {
+        p = ((p + dir) % N_PAGES + N_PAGES) % N_PAGES;
+        if (ui.avail[p]) return p;
+    }
+    return from;
+}
+
+static void page_step(int steps)
+{
+    int p = target_page();
+    for (int i = 0; i < abs(steps) && i < N_PAGES; i++) p = page_from(p, steps > 0 ? 1 : -1);
+    dash_ui_set_page(p);
+}
+
+void dash_ui_set_speed_source(int src)
+{
+    ui.speed_src = src;
+}
+
+int dash_ui_get_speed_source(void)
+{
+    return ui.speed_src;
+}
+
+/* --- kell: GPS UTC → kohalik aeg (EL suveaeg) ----------------------------- */
+static int64_t days_from_civil(int y, int m, int d)
+{
+    y -= m <= 2;
+    const int64_t era = (y >= 0 ? y : y - 399) / 400;
+    const int64_t yoe = y - era * 400;
+    const int64_t doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1;
+    const int64_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    return era * 146097 + doe - 719468;
+}
+
+static int64_t last_sunday_utc(int y, int m)   /* kuu viimane pühapäev 01:00 UTC, sekundites */
+{
+    int64_t d = days_from_civil(y, m + 1, 1) - 1;  /* kuu viimane päev (m = 3 või 10) */
+    int wd = (int)((d % 7 + 11) % 7);  /* 0 = pühapäev (1970-01-01 oli neljapäev) */
+    return (d - wd) * 86400 + 3600;
+}
+
+static bool local_clock(const gps_data_t *g, int *hh, int *mm)
+{
+    if (!g->time_valid) return false;
+    int64_t t = days_from_civil(g->year, g->month, g->day) * 86400 + g->hour * 3600 + g->min * 60 + (int)g->sec;
+    int64_t off = (int64_t)DASH_TZ_OFFSET_MIN * 60;
+    if (DASH_TZ_EU_DST && t >= last_sunday_utc(g->year, 3) && t < last_sunday_utc(g->year, 10)) off += 3600;
+    t += off;
+    int64_t sod = ((t % 86400) + 86400) % 86400;
+    *hh = (int)(sod / 3600);
+    *mm = (int)(sod / 60 % 60);
+    return true;
+}
+
 /* ---------------------------------------------------------------------- */
 static void on_screen_event(lv_event_t *e)
 {
@@ -236,7 +309,7 @@ static void on_screen_event(lv_event_t *e)
         int dx = pt.x - ui.press_pt.x, dy = pt.y - ui.press_pt.y;
         if (abs(dx) >= SWIPE_MIN_PX && abs(dx) > abs(dy)) {
             /* libistamine: vasakule = järgmine vaade */
-            dash_ui_set_page(target_page() + (dx < 0 ? 1 : -1));
+            page_step(dx < 0 ? 1 : -1);
         } else if (abs(dx) > TAP_MAX_PX || abs(dy) > TAP_MAX_PX) {
             /* pooleli jäänud libistus – ei tee midagi */
         } else if (ms >= 2500) {
@@ -265,12 +338,51 @@ static void ui_tick(lv_timer_t *tm)
         ui.rev_limit = (int)s.d.v[SIG_REVLIMIT_RPM];
     }
     s.rev_limit = ui.rev_limit;
+    s.now_us = now;
+
+    /* GPS ja kiiruse allikas */
+    gps_snapshot(&s.gps);
+    s.gps_ok = s.gps.connected;
+    if (s.gps_ok) ui.gps_seen = true;
+    s.speed_src = ui.speed_src;
+    s.speed_gps = ui.speed_src == DASH_SPEED_GPS || (ui.speed_src == DASH_SPEED_AUTO && s.gps.fix);
+    if (s.speed_gps) {
+        s.d.v[SIG_SPEED] = s.gps.fix && s.gps.speed_kmh >= DASH_GPS_MIN_KMH ? s.gps.speed_kmh : 0;
+        s.d.valid[SIG_SPEED] = s.gps.fix;
+    }
+    for (int i = 0; i < N_PAGES; i++) ui.avail[i] = !PAGES[i]->available || PAGES[i]->available(&s);
+    /* GPS-vaade, aga GPS kadus (või ei tulnud 15 s jooksul pärast käivitust) → esimene vaade */
+    if (!ui.booting && !ui.avail[target_page()] &&
+        (ui.gps_seen || now - ui.start_us > 15000000)) {
+        dash_ui_set_page(0);
+    }
+
+    /* GPS ikoon: roheline = asukoht olemas, kollane = otsib satelliite */
+    lv_obj_set_hidden(ui.gps_box, !s.gps_ok);
+    lv_obj_set_hidden(ui.clock_lbl, !(s.gps_ok && s.gps.time_valid));
+    if (s.gps_ok) {
+        char g[16];
+        if (s.gps.fix) snprintf(g, sizeof(g), "GPS %d", s.gps.sats);
+        else snprintf(g, sizeof(g), "GPS …");
+        dash_set_text_if(ui.gps_lbl, ui.gps_txt, sizeof(ui.gps_txt), g);
+        int8_t col = s.gps.fix ? (s.speed_gps ? 2 : 1) : 0;
+        if (col != ui.gps_col) {
+            lv_color_t c = col == 2 ? C_GREEN : col == 1 ? lv_color_hex(0x8FE3B0) : C_YELLOW;
+            lv_obj_set_style_text_color(ui.gps_lbl, c, 0);
+            lv_obj_set_style_border_color(ui.gps_box, c, 0);
+            ui.gps_col = col;
+        }
+        int hh, mm;
+        if (local_clock(&s.gps, &hh, &mm)) {
+            char c[8];
+            snprintf(c, sizeof(c), "%02d:%02d", hh, mm);
+            dash_set_text_if(ui.clock_lbl, ui.clock_txt, sizeof(ui.clock_txt), c);
+        }
+    }
 
     /* nupust tulnud vaatevahetus */
     int step = ui.booting ? 0 : __atomic_exchange_n(&ui.pending_step, 0, __ATOMIC_RELAXED);
-    if (step) {
-        dash_ui_set_page(target_page() + step);
-    }
+    if (step) page_step(step);
     if (ui.toast_until_us && now > ui.toast_until_us) {
         lv_obj_set_hidden(ui.toast, true);
         ui.toast_until_us = 0;
@@ -310,6 +422,10 @@ void dash_ui_create(const dash_ui_cfg_t *cfg)
     memset(&ui, 0, sizeof(ui));
     if (cfg) ui.cfg = *cfg;
     ui.rev_limit = DASH_RPM_MAX - 500;
+    ui.speed_src = DASH_SPEED_SOURCE;
+    ui.start_us = esp_timer_get_time();
+    ui.gps_col = -1;
+    for (int i = 0; i < N_PAGES; i++) ui.avail[i] = !PAGES[i]->available;
 
     lv_obj_t *scr = lv_screen_active();
     lv_obj_remove_style_all(scr);
@@ -353,6 +469,16 @@ void dash_ui_create(const dash_ui_cfg_t *cfg)
     lv_obj_t *dl = dash_label(ui.demo_badge, 16, C_BG, "DEMO");
     lv_obj_center(dl);
     lv_obj_set_hidden(ui.demo_badge, true);
+
+    /* GPS ikoon + kell (asukoht sõltub vaatest, vt dash_page_t) */
+    ui.gps_box = dash_box(scr, 0, 0, 74, 26, C_PANEL, 6);
+    lv_obj_set_style_border_width(ui.gps_box, 2, 0);
+    lv_obj_set_style_border_color(ui.gps_box, C_YELLOW, 0);
+    ui.gps_lbl = dash_label(ui.gps_box, 17, C_YELLOW, "GPS");
+    lv_obj_center(ui.gps_lbl);
+    lv_obj_set_hidden(ui.gps_box, true);
+    ui.clock_lbl = dash_label(scr, 26, C_TEXT, "--:--");
+    lv_obj_set_hidden(ui.clock_lbl, true);
 
     /* Ühendus puudub */
     ui.nocomm = dash_box(scr, 0, 0, W, H, C_BG, 0);

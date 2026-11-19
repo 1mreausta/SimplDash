@@ -10,3 +10,6 @@ void demo_step(void);
 /* Test: vesi kuumeneb üle (hoiatuse proovimiseks) */
 void demo_set_overheat(bool on);
 bool demo_is_overheat(void);
+/* Test: võlts-GPS (ovaalne rada, 10 Hz NMEA) – simulaatoris */
+void demo_set_gps(bool on);
+bool demo_is_gps(void);

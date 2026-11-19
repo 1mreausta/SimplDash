@@ -1,5 +1,17 @@
 # Muudatused
 
+## v0.2 – 2026-11-19
+
+**GPS** (valikuline): nt Ebyte E108-GN04G-TTL UART-i kaudu (pinnid `idf.py menuconfig` → SimplDash, vaikimisi väljas).
+- GPS tugi (NMEA, nt Ebyte E108-GN04G-TTL): kiiruse allikas ECU / GPS / AUTO, GPS ikoon, kell.
+- Uued vaated (ainult GPS-iga): 0–100 km/h aeg ja ringiaja taimer.
+- Simulaatorites võlts-GPS (ovaalne rada) ning nupud GPS-i ja kiiruse allika jaoks.
+- Parandus: mitu kiiret vaate vahetust (nt käivitusekraani ajal) liigutas ainult ühe vaate võrra.
+
+### Teadaolevad piirangud
+- GPS-i tugi on testitud simulaatorites (päris NMEA lausetega), aga **mitte veel päris GPS-mooduliga**.
+- Mooduli uuendussageduse (nt 10 Hz) seadistamist veel pole – kasutatakse mooduli vaikeseadet.
+
 ## v0.1 – 2026-11-19
 
 Esimene reliis.

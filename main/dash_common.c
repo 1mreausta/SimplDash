@@ -219,3 +219,35 @@ void dash_flags_update(dash_flags_t *f, const dash_state_t *s)
         }
     }
 }
+
+/* ---------------------------------------------------------------------- */
+bool dash_need_gps(const dash_state_t *s)
+{
+    return s->gps_ok;
+}
+
+void dash_fmt_time(float sec, bool minutes, char *buf, size_t cap)
+{
+    if (sec < 0) sec = 0;
+    int cs = (int)(sec * 100 + 0.5f);
+    if (minutes) snprintf(buf, cap, "%d:%02d.%02d", cs / 6000, (cs / 100) % 60, cs % 100);
+    else snprintf(buf, cap, "%d.%02d", cs / 100, cs % 100);
+}
+
+lv_obj_t *dash_button(lv_obj_t *parent, const char *txt, int x, int y, int w, int h, lv_event_cb_t cb)
+{
+    lv_obj_t *btn = lv_button_create(parent);
+    lv_obj_remove_style_all(btn);
+    lv_obj_set_size(btn, w, h);
+    lv_obj_set_pos(btn, x, y);
+    lv_obj_set_style_bg_color(btn, C_PANEL, 0);
+    lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, 0);
+    lv_obj_set_style_bg_color(btn, C_ACCENT, LV_STATE_PRESSED);
+    lv_obj_set_style_border_color(btn, C_LINE, 0);
+    lv_obj_set_style_border_width(btn, 2, 0);
+    lv_obj_set_style_radius(btn, 8, 0);
+    lv_obj_t *l = dash_label(btn, 22, C_TEXT, txt);
+    lv_obj_center(l);
+    lv_obj_add_event_cb(btn, cb, LV_EVENT_CLICKED, NULL);
+    return btn;
+}

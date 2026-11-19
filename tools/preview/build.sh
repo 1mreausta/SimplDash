@@ -16,8 +16,8 @@ if [ ! -f obj/.done ]; then
   done < <(find $L/src -name '*.c'); wait
   touch obj/.done
 fi
-clang -O1 -w -DLV_CONF_INCLUDE_SIMPLE -I. -Istub -I$L -I$L/src -I$M \
-  host_main.c $M/dash_ui.c $M/dash_common.c $M/boot_logo.c $M/page_*.c $M/maxxecu.c fontblob.s obj/*.o -o dashsim
+clang -O1 -w -DDASH_HOST -DLV_CONF_INCLUDE_SIMPLE -I. -Istub -I$L -I$L/src -I$M \
+  host_main.c $M/dash_ui.c $M/dash_common.c $M/boot_logo.c $M/page_*.c $M/maxxecu.c $M/gps.c fontblob.s obj/*.o -o dashsim
 rm -f out/*.png
 cd out && ../dashsim
 for f in *.ppm; do

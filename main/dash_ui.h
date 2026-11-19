@@ -19,5 +19,9 @@ int dash_ui_page_count(void);
 /* Vaheta vaadet (+1 järgmine, -1 eelmine). Võib kutsuda mis tahes taskist (nt nupp). */
 void dash_ui_request_page_step(int dir);
 
+/* Kiiruse allikas: DASH_SPEED_ECU / DASH_SPEED_GPS / DASH_SPEED_AUTO (dash_config.h) */
+void dash_ui_set_speed_source(int src);
+int dash_ui_get_speed_source(void);
+
 /* Ava kindel vaade. Kutsu LVGL lukuga. */
 void dash_ui_set_page(int page);

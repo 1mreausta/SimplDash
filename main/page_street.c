@@ -307,4 +307,4 @@ static void update(const dash_state_t *s)
     dash_flags_update(&p.flags, s);
 }
 
-const dash_page_t page_street = { "TÄNAV", 400, create, update, NULL };
+const dash_page_t page_street = { "TÄNAV", 400, create, update, NULL, NULL, 846, 6, 16, 4 };

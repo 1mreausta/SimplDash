@@ -79,11 +79,36 @@ typedef struct {
  *   1 KELLAD  – kaks ümarat kella (pöörded + kiirus), keskel põhinäidud
  *   2 KAAR    – suur kaartahhomeeter, kiirus keskel, 6 näidikut külgedel
  *   3 TÄNAV   – kaardus astmeline tahhomeeter, suur käik sinises kumas, segmentribad
- *   4 ANDMED  – kõik väärtused koos min/max tippudega
+ *   4 0–100   – kiirendusaeg (ainult GPS-iga)
+ *   5 RING    – ringiaja taimer (ainult GPS-iga)
+ *   6 ANDMED  – kõik väärtused koos min/max tippudega
  */
 #define DASH_BOOT_MS       2000  /* käivitusekraan logoga (ms), 0 = kohe dash */
 #define DASH_PAGE_FADE_MS  300   /* vaate vahetuse üleminek (tumeneb + heleneb), 0 = kohe */
-#define DASH_SPEED_MAX  260    /* KELLAD vaate spidomeetri skaala lõpp (km/h) */
+#define DASH_SPEED_MAX  260
+
+/* --- GPS ---------------------------------------------------------------
+ * Kiiruse allikas: ECU (rattakiirus MaxxECU-st), GPS või AUTO (GPS, kui satelliidid
+ * on olemas, muidu ECU). Simulaatoris saab vahetada nupuga.
+ */
+#define DASH_SPEED_ECU   0
+#define DASH_SPEED_GPS   1
+#define DASH_SPEED_AUTO  2
+#define DASH_SPEED_SOURCE     DASH_SPEED_AUTO
+#define DASH_GPS_MIN_KMH      2.0f    /* aeglasem GPS-kiirus = 0 (seistes GPS "hõljub") */
+
+/* Kell (GPS-ist, näidatakse ainult kui GPS on ühendatud): Eesti aeg */
+#define DASH_TZ_OFFSET_MIN    120     /* UTC+2 */
+#define DASH_TZ_EU_DST        1       /* suveaeg märtsi viimasest pühapäevast oktoobri viimaseni */
+
+/* 0–100 mõõtmine */
+#define DASH_ACCEL_TARGET     100     /* km/h */
+#define DASH_ACCEL_SPLIT      60      /* vaheaeg km/h */
+#define DASH_ACCEL_START_KMH  1.0f    /* liikumise algus */
+
+/* Ringiaeg: start/finiš joone laius (m) ja lühim võimalik ring (s) */
+#define DASH_LAP_GATE_M       25.0f
+#define DASH_LAP_MIN_S        10.0f    /* KELLAD vaate spidomeetri skaala lõpp (km/h) */
 
 /* KELLAD: keskmine tulp (5 tk) */
 #define DASH_GAUGES_CENTER { \

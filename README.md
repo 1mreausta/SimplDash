@@ -14,6 +14,8 @@ simulator. Documentation is in Estonian.*
 | ![RACE](docs/1_race.png) | ![KELLAD](docs/1_kellad.png) |
 | **KAAR** | **TÄNAV** |
 | ![KAAR](docs/1_kaar.png) | ![TÄNAV](docs/1_tanav.png) |
+| **0–100** (GPS) | **RING** (GPS) |
+| ![0–100](docs/1_0-100.png) | ![RING](docs/1_ring.png) |
 | **ANDMED** | |
 | ![ANDMED](docs/1_andmed.png) | |
 
@@ -61,7 +63,7 @@ mis laaditakse aadressile **0x0**. Ühenda plaat USB-C kaudu ja:
   Flash Address `0x0`, vali fail → Program; või
 - **käsurealt:** `pip install esptool`, siis
   ```bash
-  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.1.bin
+  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.2.bin
   ```
 
 Muudatuste nimekiri: [CHANGELOG.md](CHANGELOG.md).
@@ -75,6 +77,26 @@ idf.py -p /dev/cu.usbmodem* flash monitor
 ```
 Esimesel korral (uus arvuti või värske `git clone`): paigalda [ESP-IDF 6.1](https://docs.espressif.com/projects/esp-idf/en/latest/esp32p4/get-started/), siis
 `idf.py set-target esp32p4 && idf.py bmgr -b jc1060p470_i_w_y && idf.py build`.
+
+## GPS (valikuline)
+Nt **Ebyte E108-GN04G-TTL** (TTL-variant, mitte -232/-485): toide 5 V, andmed 3,3 V UART-i kaudu.
+
+| GPS moodul | Plaat |
+|---|---|
+| VCC | 5V |
+| GND | GND |
+| TX | vaba GPIO → `SIMPLDASH_GPS_RX_GPIO` |
+| RX (valikuline) | vaba GPIO → `SIMPLDASH_GPS_TX_GPIO` |
+
+Pinnid ja kiirus (vaikimisi 38400): `idf.py menuconfig` → SimplDash. Vaikimisi on GPS väljas (`-1`).
+
+GPS-iga lisandub:
+- **kiiruse allikas** `DASH_SPEED_SOURCE` (`dash_config.h`): ECU, GPS või AUTO (GPS kui satelliidid olemas, muidu ECU);
+- **GPS ikoon** (roheline = asukoht olemas, kollane = otsib) ja **kell** (Eesti aeg, suveaeg automaatselt);
+- vaated **0–100** (kiirendusaeg, 0–60 vaheaeg, parim ja viimased) ja **RING** (ringiaja taimer:
+  vajuta rajal start/finiš joonel *MÄRGI JOON*). Need vaated on nähtavad ainult siis, kui GPS on ühendatud.
+
+Simulaatoris: nupud **GPS ühendatud** (G) ja **Kiirus: AUTO/ECU/GPS** (S); demo-auto sõidab ovaalsel rajal.
 
 ## Kasutamine
 - **Süüte sisselülitamisel** näidatakse 2 s SimplDashi logo; shift-light'id süttivad järjest (tulede test) ja

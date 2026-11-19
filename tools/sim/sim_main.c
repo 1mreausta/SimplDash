@@ -120,8 +120,9 @@ static void handle(int fd)
     } else if (strncmp(path, "/frame", 6) == 0) {
         uint32_t since = (uint32_t)qint(path, "since", 0);
         char extra[160];
-        snprintf(extra, sizeof(extra), "X-Frame: %u\r\nX-Bright: %d\r\nX-State: %d,%d,%d,%d\r\n", s_frame_no,
-                 s_bright, demo_is_enabled(), s_can, demo_is_overheat(), s_page);
+        snprintf(extra, sizeof(extra), "X-Frame: %u\r\nX-Bright: %d\r\nX-State: %d,%d,%d,%d,%d,%d\r\n", s_frame_no,
+                 s_bright, demo_is_enabled(), s_can, demo_is_overheat(), s_page, demo_is_gps(),
+                 dash_ui_get_speed_source());
         if (since == s_frame_no) reply(fd, "200 OK", "application/octet-stream", extra, NULL, 0);
         else reply(fd, "200 OK", "application/octet-stream", extra, s_fb, sizeof(s_fb));
     } else if (strncmp(path, "/in?", 4) == 0) {
@@ -139,6 +140,8 @@ static void handle(int fd)
         else if (!strcmp(k, "demo")) demo_set_enabled(!demo_is_enabled());
         else if (!strcmp(k, "can")) s_can = !s_can;
         else if (!strcmp(k, "hot")) demo_set_overheat(!demo_is_overheat());
+        else if (!strcmp(k, "gps")) demo_set_gps(!demo_is_gps());
+        else if (!strcmp(k, "src")) dash_ui_set_speed_source((dash_ui_get_speed_source() + 1) % 3);
         reply(fd, "204 No Content", "text/plain", NULL, NULL, 0);
     } else {
         reply(fd, "404 Not Found", "text/plain", NULL, "404", 3);
@@ -180,6 +183,7 @@ int main(int argc, char **argv)
     const dash_ui_cfg_t cfg = { .on_brightness = on_bright, .on_page = on_page, .start_page = 0 };
     dash_ui_create(&cfg);
     demo_set_enabled(true);  /* simulaator alustab kohe sõiduga */
+    demo_set_gps(true);      /* ja võlts-GPS-iga (nupp "GPS" lülitab välja) */
 
     printf("SimplDash simulaator töötab:  http://localhost:%d   (Ctrl+C peatab)\n", port);
     fflush(stdout);

@@ -132,4 +132,4 @@ static void update(const dash_state_t *s)
     }
 }
 
-const dash_page_t page_data = { "ANDMED", 2, create, update, background };
+const dash_page_t page_data = { "ANDMED", 2, create, update, background, NULL, 560, 14, 470, 12 };
