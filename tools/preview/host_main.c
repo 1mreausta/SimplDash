@@ -1,4 +1,5 @@
 /* Dashi eelvaade arvutis: joonistab iga vaate PPM-failiks (build.sh teeb PNG-d). */
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,20 +30,43 @@ static void feed(void){
   uint8_t b[8];
   for(const uint16_t *id=maxxecu_frame_ids; *id; id++){ maxxecu_encode(*id, v, flags, b); maxxecu_decode(*id, b, 8); }
 }
-/* võlts-GPS: kiirus gps_kmh (< 0 = GPS puudub), kell 2026-11-19 10:41 UTC + aeg */
+/* võlts-GPS: kiirus gps_kmh (< 0 = GPS puudub), asukoht gps_x/gps_y meetrites raja keskpunktist,
+ * kell 2026-11-19 10:41 UTC + aeg */
 static float gps_kmh = -1;
+static double gps_x, gps_y, gps_course;
 static void gps_line(const char *body){
   unsigned char c = 0; for (const char *p = body; *p; p++) c ^= (unsigned char)*p;
-  char l[128]; int n = snprintf(l, sizeof l, "$%s*%02X\r\n", body, c); gps_feed(l, (size_t)n);
+  char l[160]; int n = snprintf(l, sizeof l, "$%s*%02X\r\n", body, c); gps_feed(l, (size_t)n);
 }
 static void gps_emit(void){
   int64_t ms = g_fake_time_us / 1000; int sec = (int)(ms / 1000);
-  char b[128];
-  snprintf(b, sizeof b, "GNRMC,10%02d%02d.%02d,A,5923.70000,N,02439.90000,E,%.2f,12.0,191126,,,A",
-           41 + sec / 60 % 18, sec % 60, (int)(ms % 1000) / 10, gps_kmh / 1.852);
+  double lat = 59.3950 + gps_y / 110540.0, lon = 24.6650 + gps_x / (111320.0 * cos(59.3950 * M_PI / 180));
+  int ld = (int)lat, od = (int)lon;
+  char b[160];
+  snprintf(b, sizeof b, "GNRMC,10%02d%02d.%02d,A,%02d%08.5f,N,%03d%08.5f,E,%.2f,%.1f,191126,,,A",
+           41 + sec / 60 % 18, sec % 60, (int)(ms % 1000) / 10, ld, (lat - ld) * 60, od, (lon - od) * 60,
+           gps_kmh / 1.852, gps_course);
   gps_line(b);
   gps_line("GNGGA,104100.00,5923.70000,N,02439.90000,E,1,11,0.8,42.0,M,18.0,M,,");
 }
+/* ovaalne rada (sama mis demo.c-s): 2 × 250 m sirge + 2 × R70 kurv */
+static void track_pos(double d, double *x, double *y, double *course){
+  const double LS = 250, R = 70, L = 2 * LS + 2 * M_PI * R;
+  d = fmod(d, L);
+  if (d < LS) { *x = R; *y = -LS / 2 + d; *course = 0; return; }
+  d -= LS;
+  if (d < M_PI * R) { double a = d / R; *x = R * cos(a); *y = LS / 2 + R * sin(a); *course = fmod(360 - a * 180 / M_PI, 360); return; }
+  d -= M_PI * R;
+  if (d < LS) { *x = -R; *y = LS / 2 - d; *course = 180; return; }
+  d -= LS;
+  double a = M_PI + d / R; *x = R * cos(a); *y = -LS / 2 + R * sin(a); *course = fmod(540 - (a - M_PI) * 180 / M_PI, 360);
+}
+static int in_straight(double d){ const double LS = 250, R = 70, L = 2 * LS + 2 * M_PI * R; d = fmod(d, L);
+  return d < LS || (d >= LS + M_PI * R && d < 2 * LS + M_PI * R); }
+/* puutepunkt (virtuaalne sõrm) */
+static int touch_x, touch_y, touch_down;
+static void touch_cb(lv_indev_t *i, lv_indev_data_t *d){ (void)i; d->point.x = touch_x; d->point.y = touch_y;
+  d->state = touch_down ? LV_INDEV_STATE_PRESSED : LV_INDEV_STATE_RELEASED; }
 static void run(int ms){
   for(int i=0;i<ms/5;i++){ g_fake_time_us += 5000; if(feeding && i%4==0) feed();
     if (gps_kmh >= 0 && (g_fake_time_us / 5000) % 20 == 0) gps_emit(); lv_timer_handler(); }
@@ -57,6 +81,7 @@ int main(void){
   lv_display_set_color_format(d, LV_COLOR_FORMAT_XRGB8888);
   lv_display_set_buffers(d, buf, NULL, sizeof(buf), LV_DISPLAY_RENDER_MODE_DIRECT);
   lv_display_set_flush_cb(d, flush);
+  lv_indev_t *in = lv_indev_create(); lv_indev_set_type(in, LV_INDEV_TYPE_POINTER); lv_indev_set_read_cb(in, touch_cb);
   dash_ui_cfg_t cfg = { 0 };
   dash_ui_create(&cfg);
   run(1600); dump("0_boot.ppm");          /* käivitusekraan */
@@ -74,11 +99,35 @@ int main(void){
   v[SIG_RPM]=950; v[SIG_SPEED]=0; v[SIG_CLT]=84; v[SIG_MAP]=35; v[SIG_TPS]=2; run(100);
   v[SIG_RPM]=r0; v[SIG_SPEED]=147; v[SIG_CLT]=91; v[SIG_MAP]=210; v[SIG_TPS]=100;
 
-  /* GPS: seisab 1,5 s, siis kiirendab 0 → 110 km/h (0–100 ≈ 4,55 s) */
-  gps_kmh = 0; run(1500);
-  for (int i = 1; i <= 50; i++) { gps_kmh = 22.0f * i / 10; if (gps_kmh > 110) gps_kmh = 110; run(100); }
+  /* GPS 0–100: neli katset erineva kiirendusega (seisab 1,5 s, kiirendab, pidurdab) */
+  gps_x = 70; gps_y = -125; gps_course = 0;
+  const float accel[4] = { 20.6f, 21.9f, 21.2f, 22.4f };   /* km/h sekundis */
+  for (int k = 0; k < 4; k++) {
+    gps_kmh = 0; run(1500);
+    for (float v0 = 0; v0 < 110; ) { v0 += accel[k] / 10 * (1 - v0 / 260); gps_kmh = v0; run(100); }
+    for (float v0 = 110; v0 > 0; v0 -= 4) { gps_kmh = v0; run(100); }
+  }
+  gps_kmh = 0; run(1200);
+
+  /* GPS ring: vaade RING, auto seisab joonel → "MÄRGI JOON", siis 5 ringi */
+  dash_ui_set_page(5); settle();
+  touch_x = 920; touch_y = 467; touch_down = 1; run(100); touch_down = 0; run(100);
+  const float lap_avg[5] = { 118, 124, 121, 126, 123 };
+  double dist = 0;
+  const double L = 2 * 250 + 2 * M_PI * 70;
+  for (int lap = 0; lap < 5; lap++) {
+    while (dist < (lap + 1) * L) {
+      float v0 = lap_avg[lap] + (in_straight(dist) ? 22 : -26);
+      dist += v0 / 3.6 * 0.1;
+      track_pos(dist, &gps_x, &gps_y, &gps_course);
+      gps_kmh = v0;
+      g_fake_time_us += 100000; gps_emit(); if (feeding) feed(); lv_timer_handler();
+    }
+  }
+  /* 6. ring käib: veel 9 s */
+  for (int i = 0; i < 90; i++) { dist += 140 / 3.6 * 0.1; track_pos(dist, &gps_x, &gps_y, &gps_course); gps_kmh = 140;
+    g_fake_time_us += 100000; gps_emit(); if (feeding) feed(); lv_timer_handler(); }
   gps_kmh = 147;
-  run(300);
 
   char fn[64];
   for (int p = 0; p < dash_ui_page_count(); p++) {

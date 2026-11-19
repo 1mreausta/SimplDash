@@ -81,6 +81,7 @@ static void open_page(int page, bool notify)
     if (ui.gps_box) {
         lv_obj_set_pos(ui.gps_box, PAGES[page]->gps_x, PAGES[page]->gps_y);
         lv_obj_set_pos(ui.clock_lbl, PAGES[page]->clock_x, PAGES[page]->clock_y);
+        lv_obj_set_pos(ui.demo_badge, PAGES[page]->demo_x, PAGES[page]->demo_y);
     }
     if (changed && notify) {
         show_toast();
@@ -465,7 +466,7 @@ void dash_ui_create(const dash_ui_cfg_t *cfg)
     lv_obj_set_hidden(ui.warn_box, true);
 
     /* Demo märk */
-    ui.demo_badge = dash_box(scr, W - 92, 4, 80, 26, C_YELLOW, 5);
+    ui.demo_badge = dash_box(scr, W - 92, 4, 74, 26, C_YELLOW, 6);
     lv_obj_t *dl = dash_label(ui.demo_badge, 16, C_BG, "DEMO");
     lv_obj_center(dl);
     lv_obj_set_hidden(ui.demo_badge, true);

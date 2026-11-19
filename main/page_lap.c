@@ -220,4 +220,4 @@ static void update(const dash_state_t *s)
     dash_set_text_if(p.hist_l, p.t_hist, sizeof(p.t_hist), buf);
 }
 
-const dash_page_t page_lap = { "RING", 470, create, update, background, dash_need_gps, 846, 6, 16, 4 };
+const dash_page_t page_lap = { "RING", 470, create, update, background, dash_need_gps, 938, 4, 16, 4, 856, 4 };

@@ -48,6 +48,10 @@ static void background(const dash_state_t *s)
     bool have_prev = p.last_sample != 0 && p.t_prev != 0;
     p.last_sample = g->samples;
 
+    /* usutavus: mõõtmiste vahe ≤ 0,5 s ja kiirendus ≤ DASH_ACCEL_MAX_KMHS (nt GPS-i hüpe) */
+    float dt = have_prev ? (t - p.t_prev) / 1e6f : 0;
+    bool plausible = have_prev && dt > 0 && dt <= 0.5f && (v - p.v_prev) / dt <= DASH_ACCEL_MAX_KMHS;
+
     if (v < DASH_ACCEL_START_KMH) {
         if (!p.still_since) p.still_since = t;
     } else {
@@ -65,12 +69,20 @@ static void background(const dash_state_t *s)
         break;
     case ST_READY:
         if (v >= DASH_ACCEL_START_KMH) {
-            p.t_start = have_prev ? interp_t(p.t_prev, p.v_prev, t, v, DASH_ACCEL_START_KMH) : t;
-            p.t_split = 0;
-            p.st = ST_RUN;
+            if (plausible) {
+                p.t_start = interp_t(p.t_prev, p.v_prev, t, v, DASH_ACCEL_START_KMH);
+                p.t_split = 0;
+                p.st = ST_RUN;
+            } else {
+                p.st = ST_WAIT;                      /* hüpe – ei ole päris start */
+            }
         }
         break;
     case ST_RUN:
+        if (!plausible) {
+            p.st = ST_WAIT;                          /* GPS-i hüpe või katkestus mõõtmise ajal */
+            break;
+        }
         if (!p.t_split && v >= DASH_ACCEL_SPLIT) {
             p.t_split = interp_t(p.t_prev, p.v_prev, t, v, DASH_ACCEL_SPLIT);
             p.split = (p.t_split - p.t_start) / 1e6f;
@@ -192,4 +204,4 @@ static void update(const dash_state_t *s)
     dash_set_text_if(p.hist_l, p.t_hist, sizeof(p.t_hist), buf);
 }
 
-const dash_page_t page_accel = { "0–100", 470, create, update, background, dash_need_gps, 846, 6, 16, 4 };
+const dash_page_t page_accel = { "0–100", 470, create, update, background, dash_need_gps, 938, 4, 16, 4, 856, 4 };

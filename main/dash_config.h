@@ -105,6 +105,7 @@ typedef struct {
 #define DASH_ACCEL_TARGET     100     /* km/h */
 #define DASH_ACCEL_SPLIT      60      /* vaheaeg km/h */
 #define DASH_ACCEL_START_KMH  1.0f    /* liikumise algus */
+#define DASH_ACCEL_MAX_KMHS   60.0f   /* suurem kiirendus (km/h sekundis, ~1,7 g) = GPS-i viga, mõõtmine katkeb */
 
 /* Ringiaeg: start/finiš joone laius (m) ja lühim võimalik ring (s) */
 #define DASH_LAP_GATE_M       25.0f

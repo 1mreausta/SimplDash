@@ -57,6 +57,7 @@ typedef struct {
     bool (*available)(const dash_state_t *s);     /* NULL = alati; nt ainult GPS-iga */
     int16_t gps_x, gps_y;                         /* GPS ikooni asukoht selles vaates */
     int16_t clock_x, clock_y;                     /* kella asukoht */
+    int16_t demo_x, demo_y;                       /* DEMO märgi asukoht (GPS ikoonist vasakul) */
 } dash_page_t;
 
 extern const dash_page_t page_race, page_gauges, page_sweep, page_street, page_data,
