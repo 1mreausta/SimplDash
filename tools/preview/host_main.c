@@ -73,7 +73,7 @@ static void run(int ms){
 }
 /* hoia vilkumine "sees" faasis ja oota, kuni vaate nime teade kaob */
 static void settle(void){ run(1400); while(((g_fake_time_us/250000)%2)==1) run(5); while(((g_fake_time_us/250000)%2)==0) run(5); run(60); }
-static const char *NAMES[] = { "race", "kellad", "kaar", "tanav", "0-100", "ring", "andmed" };
+static const char *NAMES[] = { "race", "kellad", "kaar", "tanav", "klassika", "0-100", "ring", "andmed" };
 int main(void){
   lv_init(); lv_tick_set_cb(tick);
   lv_display_t *d = lv_display_create(1024,600);
@@ -110,7 +110,7 @@ int main(void){
   gps_kmh = 0; run(1200);
 
   /* GPS ring: vaade RING, auto seisab joonel → "MÄRGI JOON", siis 5 ringi */
-  dash_ui_set_page(5); settle();
+  dash_ui_set_page(6); settle();
   touch_x = 920; touch_y = 467; touch_down = 1; run(100); touch_down = 0; run(100);
   const float lap_avg[5] = { 118, 124, 121, 126, 123 };
   double dist = 0;

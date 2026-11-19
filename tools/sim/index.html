@@ -52,7 +52,7 @@
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 const img = ctx.createImageData(1024, 600), px = new Uint32Array(img.data.buffer);
 const st = document.getElementById('status');
-const PAGES = ['RACE', 'KELLAD', 'KAAR', 'TÄNAV', '0–100', 'RING', 'ANDMED'];
+const PAGES = ['RACE', 'KELLAD', 'KAAR', 'TÄNAV', 'KLASSIKA', '0–100', 'RING', 'ANDMED'];
 const SRC = ['ECU', 'GPS', 'AUTO'];
 function setSrc(v) { const b = document.getElementById('src'); b.firstChild.nodeValue = 'Kiirus: ' + SRC[v]; }
 let since = 0, down = false, fps = 0, frames = 0, last = performance.now();

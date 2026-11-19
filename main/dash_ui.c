@@ -14,7 +14,7 @@
 #include "version.h"
 
 static const dash_page_t *const PAGES[] = { &page_race, &page_gauges, &page_sweep, &page_street,
-                                             &page_accel, &page_lap, &page_data };
+                                             &page_classic, &page_accel, &page_lap, &page_data };
 #define N_PAGES ((int)(sizeof(PAGES) / sizeof(PAGES[0])))
 
 static const dash_warning_t WARN[] = DASH_WARNINGS;
@@ -359,8 +359,8 @@ static void ui_tick(lv_timer_t *tm)
     }
 
     /* GPS ikoon: roheline = asukoht olemas, kollane = otsib satelliite */
-    lv_obj_set_hidden(ui.gps_box, !s.gps_ok);
-    lv_obj_set_hidden(ui.clock_lbl, !(s.gps_ok && s.gps.time_valid));
+    lv_obj_set_hidden(ui.gps_box, !s.gps_ok || PAGES[ui.page]->gps_x < 0);   /* < 0 = vaade näitab ise */
+    lv_obj_set_hidden(ui.clock_lbl, !(s.gps_ok && s.gps.time_valid) || PAGES[ui.page]->clock_x < 0);
     if (s.gps_ok) {
         char g[16];
         if (s.gps.fix) snprintf(g, sizeof(g), "GPS %d", s.gps.sats);
@@ -390,7 +390,7 @@ static void ui_tick(lv_timer_t *tm)
     }
 
     lv_obj_set_hidden(ui.nocomm, !s.stale);
-    lv_obj_set_hidden(ui.demo_badge, !demo_is_enabled());
+    lv_obj_set_hidden(ui.demo_badge, !demo_is_enabled() || PAGES[ui.page]->demo_x < 0);
 
     /* hoiatused */
     char wtxt[96] = "";

@@ -6,7 +6,7 @@ Digitaalne näidikuplokk (race dash) MaxxECU ajule: loeb CAN-siinilt MaxxECU and
 7" puuteekraanil. Plaat: Guition JC1060P470C (ESP32-P4, 1024×600).
 
 *A race-style digital dash for MaxxECU engine controllers. [Try the simulator in your browser](https://1mreausta.github.io/SimplDash/). Reads the MaxxECU CAN protocol and shows it on a
-7" ESP32-P4 touch display (Guition JC1060P470C). Five swipeable views, warnings, demo mode and a desktop
+7" ESP32-P4 touch display (Guition JC1060P470C). Swipeable views (incl. a classic needle-gauge view), warnings, demo mode and a desktop
 simulator. Documentation is in Estonian.*
 
 | RACE | KELLAD |
@@ -16,8 +16,8 @@ simulator. Documentation is in Estonian.*
 | ![KAAR](docs/1_kaar.png) | ![TÄNAV](docs/1_tanav.png) |
 | **0–100** (GPS) | **RING** (GPS) |
 | ![0–100](docs/1_0-100.png) | ![RING](docs/1_ring.png) |
-| **ANDMED** | |
-| ![ANDMED](docs/1_andmed.png) | |
+| **KLASSIKA** | **ANDMED** |
+| ![KLASSIKA](docs/1_klassika.png) | ![ANDMED](docs/1_andmed.png) |
 
 MaxxECU → CAN (500 kbit/s) → SN65HVD230 → ESP32-P4 TWAI → LVGL dash.
 Käivitub umbes sekundiga; väljalülitamisel pole midagi, mis võiks rikki minna.
@@ -63,7 +63,7 @@ mis laaditakse aadressile **0x0**. Ühenda plaat USB-C kaudu ja:
   Flash Address `0x0`, vali fail → Program; või
 - **käsurealt:** `pip install esptool`, siis
   ```bash
-  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.21.bin
+  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.3.bin
   ```
 
 Muudatuste nimekiri: [CHANGELOG.md](CHANGELOG.md).
@@ -102,7 +102,7 @@ Simulaatoris: nupud **GPS ühendatud** (G) ja **Kiirus: AUTO/ECU/GPS** (S); demo
 - **Süüte sisselülitamisel** näidatakse 2 s SimplDashi logo; shift-light'id süttivad järjest (tulede test) ja
   dash heleneb nähtavale samamoodi nagu vaadete vahetusel (`DASH_BOOT_MS`, 0 = kohe dash).
   Logo pilt tehakse fondist: `python3 tools/logo/make_boot_logo.py` → `main/boot_logo.c`.
-- **Libista vasakule / paremale** – järgmine / eelmine vaade (RACE → KELLAD → KAAR → TÄNAV → ANDMED).
+- **Libista vasakule / paremale** – järgmine / eelmine vaade (RACE → KELLAD → KAAR → TÄNAV → KLASSIKA → ANDMED; GPS-iga lisaks 0–100 ja RING).
   Vahetus on sujuv (tumeneb ja heleneb, 0,3 s – `DASH_PAGE_FADE_MS`, 0 = kohe). Vaate nimi näidatakse hetkeks all keskel; viimane vaade jäetakse meelde ka pärast väljalülitamist.
 - **Füüsiline nupp** (valikuline, nt roolil) – järgmine vaade. Nupp GPIO ja GND vahele,
   seejärel `idf.py menuconfig` → SimplDash → *Vaate nupu GPIO*.
@@ -115,7 +115,8 @@ Simulaatoris: nupud **GPS ühendatud** (G) ja **Kiirus: AUTO/ECU/GPS** (S); demo
 ## Seadistamine
 Kõik näidikud, hoiatuspiirid, shift-lightid ja iga vaate näidikud:
 [`main/dash_config.h`](main/dash_config.h) (`DASH_TILES_*` = RACE, `DASH_GAUGES_*` = KELLAD,
-`DASH_SWEEP_*` = KAAR, `DASH_STREET_*` = TÄNAV, `DASH_DATA_ROWS` = ANDMED).
+`DASH_SWEEP_*` = KAAR, `DASH_STREET_*` = TÄNAV, `DASH_CLASSIC_*` / `DASH_INJ_CC_MIN` / `DASH_CYLINDERS` = KLASSIKA,
+`DASH_DATA_ROWS` = ANDMED).
 CAN-pinnid, bitikiirus, listen-only: `idf.py menuconfig` → SimplDash.
 
 ## Simulaator arvutis (interaktiivne, ilma plaadita)
@@ -152,7 +153,7 @@ Joonistab kõik vaated, ka hoiatusega. Kasutab sama UI koodi – muuda disaini j
 | `main/can_rx.c` | TWAI (CAN) vastuvõtt, bus-off taastamine |
 | `main/dash_ui.c` | vaadete vahetus, puudutused, hoiatused |
 | `main/dash_common.c` | ühised vidinad (näidiku-plaat, olekulipud, fondid) |
-| `main/page_*.c` | vaated: race, gauges (KELLAD), sweep (KAAR), street (TÄNAV), data (ANDMED) |
+| `main/page_*.c` | vaated: race, gauges (KELLAD), sweep (KAAR), street (TÄNAV), classic (KLASSIKA), data (ANDMED) |
 | `main/demo.c` | demorežiimi sõidumudel |
 | `main/dash_config.h` | **kõik seaded** |
 | `main/fonts/` | Barlow Condensed (SIL OFL litsents) |

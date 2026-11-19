@@ -1,6 +1,10 @@
 # Muudatused
 
-## Avaldamata
+## v0.3 – 2026-11-19
+- Uus vaade **KLASSIKA**: 90ndate Jaapani sportauto stiilis osutitega kellad – spidomeeter (0–320 km/h),
+  tahhomeeter (0–11 000 r/min, kollane/punane tsoon), vesi, hetke kütusekulu (L/100km, seistes L/h) ja õlirõhk.
+  Käik ja kiirus väikestes akendes, DEMO/GPS märgutuled spidomeetris.
+  Kütusekulu arvutatakse pihustite töötsüklist (`DASH_INJ_CC_MIN`, `DASH_CYLINDERS`; vaikimisi RB25DET 6 × 630 cc).
 - RING vaates 4 + 4 näidikut külgedel (vaikimisi vesi, õli temp/rõhk, kütuse rõhk | kiirus, ülerõhk, AFR, aku;
   muuda `DASH_LAP_LEFT` / `DASH_LAP_RIGHT`). Hoiatusriba on RING vaates keskel.
 

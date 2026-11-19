@@ -79,13 +79,23 @@ typedef struct {
  *   1 KELLAD  – kaks ümarat kella (pöörded + kiirus), keskel põhinäidud
  *   2 KAAR    – suur kaartahhomeeter, kiirus keskel, 6 näidikut külgedel
  *   3 TÄNAV   – kaardus astmeline tahhomeeter, suur käik sinises kumas, segmentribad
- *   4 0–100   – kiirendusaeg (ainult GPS-iga)
- *   5 RING    – ringiaja taimer (ainult GPS-iga)
- *   6 ANDMED  – kõik väärtused koos min/max tippudega
+ *   4 KLASSIKA – osutitega kellad: vesi, kütusekulu | spido, tahho | õlirõhk
+ *   5 0–100   – kiirendusaeg (ainult GPS-iga)
+ *   6 RING    – ringiaja taimer (ainult GPS-iga)
+ *   7 ANDMED  – kõik väärtused koos min/max tippudega
  */
 #define DASH_BOOT_MS       2000  /* käivitusekraan logoga (ms), 0 = kohe dash */
 #define DASH_PAGE_FADE_MS  300   /* vaate vahetuse üleminek (tumeneb + heleneb), 0 = kohe */
 #define DASH_SPEED_MAX  260
+
+/* KLASSIKA: hetke kütusekulu arvutatakse pihustite töötsüklist (MaxxECU ei saada kulu otse):
+ * L/h = pihusti cc/min × silindreid × duty% × 60 / 1000;  L/100km = L/h / kiirus × 100 */
+#define DASH_INJ_CC_MIN     630     /* ühe pihusti vooluhulk (cc/min, kütuse rõhul) */
+#define DASH_CYLINDERS      6       /* RB25DET: 2,5 L, 6 silindrit */
+#define DASH_FUEL_GAUGE_MAX 30      /* kütusekulu kella skaala lõpp (L/100km) */
+#define DASH_CLASSIC_SPEED_MAX 320  /* KLASSIKA spidomeetri skaala lõpp (km/h) */
+#define DASH_CLASSIC_RPM_MAX 11000 /* KLASSIKA tahhomeetri skaala lõpp (rpm), nagu originaalis */
+#define DASH_OIL_GAUGE_MAX  8       /* KLASSIKA õlirõhu kella skaala lõpp (bar) */
 
 /* --- GPS ---------------------------------------------------------------
  * Kiiruse allikas: ECU (rattakiirus MaxxECU-st), GPS või AUTO (GPS, kui satelliidid

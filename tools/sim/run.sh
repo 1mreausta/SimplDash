@@ -21,6 +21,6 @@ VER=$(sed -n 's/.*SIMPLDASH_VERSION "\(.*\)".*/\1/p' "$M/version.h")
 sed "s/__SIMPLDASH_VERSION__/$VER/g" index.html > index.gen.html
 clang -O2 -w -DDASH_HOST -DLV_CONF_INCLUDE_SIMPLE -I$P -I$P/stub -I$L -I$L/src -I$M \
   sim_main.c html.s $P/fontblob.s \
-  $M/dash_ui.c $M/dash_common.c $M/boot_logo.c $M/page_*.c $M/maxxecu.c $M/demo.c $M/gps.c \
+  $M/dash_ui.c $M/dash_common.c $M/boot_logo.c $M/needles.c $M/page_*.c $M/maxxecu.c $M/demo.c $M/gps.c \
   $P/obj/*.o -o simpldash_sim
 exec ./simpldash_sim "${1:-8090}"

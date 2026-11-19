@@ -39,7 +39,7 @@ PY
 
 echo "Kompileerin SimplDash'i…"
 emcc $CFLAGS web_main.c "$OBJ/font_data.c" \
-  $M/dash_ui.c $M/dash_common.c $M/boot_logo.c $M/page_*.c $M/maxxecu.c $M/demo.c $M/gps.c \
+  $M/dash_ui.c $M/dash_common.c $M/boot_logo.c $M/needles.c $M/page_*.c $M/maxxecu.c $M/demo.c $M/gps.c \
   "$OBJ"/l*.o -o "$OUT/simpldash.js" \
   -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864 -sSTACK_SIZE=1048576 \
   -sEXPORTED_FUNCTIONS=_main,_sim_pointer,_sim_key,_sim_state,_sim_fb,_sim_frame_no,_sim_bench \
