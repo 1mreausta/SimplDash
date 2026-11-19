@@ -53,6 +53,19 @@ Toide: 12 V → 5 V muundur (≥ 2 A, auto/24 V sisendiga) → päise 5V/GND.
 ## MTune
 CAN → Output protocol **MaxxECU Default 1.3**, CAN1 bitrate **500 kbit/s**.
 
+## Valmis püsivara laadimine (ilma ESP-IDF-ita)
+Iga [reliisi](https://github.com/1mreausta/SimplDash/releases) juures on üks fail `simpldash-vX.Y.bin`,
+mis laaditakse aadressile **0x0**. Ühenda plaat USB-C kaudu ja:
+
+- **brauseris:** ava https://espressif.github.io/esptool-js/ (Chrome/Edge), Connect → vali port,
+  Flash Address `0x0`, vali fail → Program; või
+- **käsurealt:** `pip install esptool`, siis
+  ```bash
+  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.1.bin
+  ```
+
+Muudatuste nimekiri: [CHANGELOG.md](CHANGELOG.md).
+
 ## Ehitamine ja plaadile laadimine
 ```bash
 cd firmware

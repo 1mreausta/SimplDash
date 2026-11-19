@@ -11,6 +11,7 @@
 #include "dash_common.h"
 #include "demo.h"
 #include "esp_timer.h"
+#include "version.h"
 
 static const dash_page_t *const PAGES[] = { &page_race, &page_gauges, &page_sweep, &page_street, &page_data };
 #define N_PAGES ((int)(sizeof(PAGES) / sizeof(PAGES[0])))
@@ -175,7 +176,7 @@ static void boot_create(lv_obj_t *scr)
     for (int i = 0; i < n; i++) {
         ui.boot_dots[i] = dash_box(ui.boot_content, x0 + i * (dw + dg), 156, dw, 9, C_OFF, 4);
     }
-    lv_obj_t *sub = dash_label(ui.boot_content, 20, C_DIM, "MaxxECU RACE DASH");
+    lv_obj_t *sub = dash_label(ui.boot_content, 20, C_DIM, "MaxxECU RACE DASH  ·  v" SIMPLDASH_VERSION);
     lv_obj_align(sub, LV_ALIGN_TOP_MID, 0, 186);
     ui.boot_lit = 0;
     ui.booting = true;

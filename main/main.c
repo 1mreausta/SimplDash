@@ -20,6 +20,7 @@
 #include "nvs_flash.h"
 #include "periph_ledc.h"
 #include "sdkconfig.h"
+#include "version.h"
 
 static const char *TAG = "simpldash";
 
@@ -105,6 +106,7 @@ static void button_task(void *arg)
 
 void app_main(void)
 {
+    ESP_LOGI(TAG, "SimplDash v%s", SIMPLDASH_VERSION);
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         nvs_flash_erase();
