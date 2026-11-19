@@ -16,6 +16,11 @@ static volatile bool s_on, s_hot, s_gps;
 
 void demo_set_enabled(bool on) { s_on = on; }
 bool demo_is_enabled(void) { return s_on; }
+#ifdef DASH_HOST
+bool demo_skip_records(void) { return false; }   /* simulaatoris on kõik demo – näita logisid ikkagi */
+#else
+bool demo_skip_records(void) { return s_on; }
+#endif
 void demo_set_overheat(bool on) { s_hot = on; }
 bool demo_is_overheat(void) { return s_hot; }
 

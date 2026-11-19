@@ -4,11 +4,12 @@
  */
 #pragma once
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include "dash_config.h"
 
 #define SET_MAX_WARN 16
-#define SET_VERSION  1
+#define SET_VERSION  1   /* muuda ainult siis, kui vana väli muutub; uued väljad lisa lõppu */
 
 typedef struct {
     uint16_t version;
@@ -40,7 +41,10 @@ typedef struct {
     char     wifi_pass[65];
     /* CAN: dash saadab ECU-le nuppude kaadri */
     int8_t   can_tx_on;
+    /* UUED VÄLJAD SIIA (lõppu) ja uuenda SET_DATA_END */
 } dash_settings_t;
+/* salvestatakse ilma lõpu täitebaitideta, et järgmise versiooni uus väli ei satuks vanade täitebaitide kohale */
+#define SET_DATA_END (offsetof(dash_settings_t, can_tx_on) + sizeof(int8_t))
 
 extern dash_settings_t g_set;
 

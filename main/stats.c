@@ -1,5 +1,6 @@
 #include "stats.h"
 #include <string.h>
+#include "demo.h"
 #include "settings.h"
 #include "store.h"
 
@@ -9,17 +10,17 @@ static bool s_dirty;
 
 void stats_init(void)
 {
-    dash_stats_t c;
     memset(&st, 0, sizeof(st));
     st.ver = 1;
-    if (store_load("stats", &c, sizeof(c)) && c.ver == 1) st = c;
+    dash_stats_t c = st;   /* vanemas versioonis puuduvad väljad jäävad nulliks */
+    if (store_load_grow("stats", &c, sizeof(c)) && c.ver == 1) st = c;
 }
 
 const dash_stats_t *stats_get(void) { return &st; }
 
 static void save(int64_t now)
 {
-    store_save("stats", &st, sizeof(st));
+    store_save("stats", &st, STATS_DATA_END);
     s_saved_us = now;
     s_dirty = false;
 }
@@ -48,6 +49,10 @@ float stats_fuel_lph(const dash_state_t *s)
 void stats_update(const dash_state_t *s)
 {
     int64_t now = s->now_us;
+    if (demo_skip_records()) {   /* demosõit ei loe läbisõitu, tunde ega kütust */
+        s_last_us = now;
+        return;
+    }
     if (!s_last_us) {
         s_last_us = s_saved_us = now;
         return;

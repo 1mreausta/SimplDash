@@ -5,15 +5,19 @@
 #include "nvs.h"
 #define NS "dash"
 
-bool store_load(const char *key, void *buf, size_t len)
+static bool load(const char *key, void *buf, size_t len, bool grow)
 {
     nvs_handle_t h;
     if (nvs_open(NS, NVS_READONLY, &h) != ESP_OK) return false;
     size_t n = 0;
-    bool ok = nvs_get_blob(h, key, NULL, &n) == ESP_OK && n == len && nvs_get_blob(h, key, buf, &n) == ESP_OK;
+    bool ok = nvs_get_blob(h, key, NULL, &n) == ESP_OK && (grow ? n <= len : n == len) &&
+              nvs_get_blob(h, key, buf, &n) == ESP_OK;
     nvs_close(h);
     return ok;
 }
+
+bool store_load(const char *key, void *buf, size_t len) { return load(key, buf, len, false); }
+bool store_load_grow(const char *key, void *buf, size_t len) { return load(key, buf, len, true); }
 
 bool store_save(const char *key, const void *buf, size_t len)
 {
@@ -46,7 +50,7 @@ static bool path(const char *key, char *out, size_t cap)
     return true;
 }
 
-bool store_load(const char *key, void *buf, size_t len)
+static bool load(const char *key, void *buf, size_t len, bool grow)
 {
     char p[512];
     if (!path(key, p, sizeof(p))) return false;
@@ -55,10 +59,13 @@ bool store_load(const char *key, void *buf, size_t len)
     fseek(f, 0, SEEK_END);
     long n = ftell(f);
     fseek(f, 0, SEEK_SET);
-    bool ok = n == (long)len && fread(buf, 1, len, f) == len;
+    bool ok = n > 0 && (grow ? n <= (long)len : n == (long)len) && fread(buf, 1, (size_t)n, f) == (size_t)n;
     fclose(f);
     return ok;
 }
+
+bool store_load(const char *key, void *buf, size_t len) { return load(key, buf, len, false); }
+bool store_load_grow(const char *key, void *buf, size_t len) { return load(key, buf, len, true); }
 
 bool store_save(const char *key, const void *buf, size_t len)
 {

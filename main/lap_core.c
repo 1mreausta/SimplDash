@@ -24,7 +24,7 @@ static struct {
     float    cur_d;
     int      ref_idx;
     lap_pt_t *cur, *ref;
-    bool     saved_checked;
+    int64_t  saved_next;          /* millal salvestatud rada uuesti kontrollida (INT64_MAX = enam mitte) */
 } p;
 
 typedef struct {
@@ -108,7 +108,7 @@ void lap_set_line(double lat, double lon, float course_deg, bool start_now)
     p.ref_idx = 0;
     p.have_prev = false;
     p.last_sample = g.samples;
-    p.saved_checked = true;
+    p.saved_next = INT64_MAX;
     save_track(course_deg);
 }
 
@@ -288,11 +288,17 @@ static void lap_done(int64_t tc)
 
 static void try_saved_track(const gps_data_t *g)
 {
-    p.saved_checked = true;
     saved_track_t t;
-    if (!store_load("track", &t, sizeof(t)) || t.ver != 2) return;
+    if (!store_load("track", &t, sizeof(t)) || t.ver != 2) {
+        p.saved_next = INT64_MAX;   /* salvestatud rada pole */
+        return;
+    }
     double dy = (g->lat - t.lat0) * 110540.0, dx = (g->lon - t.lon0) * 111320.0 * cos(t.lat0 * DEG2RAD);
-    if (dx * dx + dy * dy > AUTO_TRACK_M * AUTO_TRACK_M) return;
+    if (dx * dx + dy * dy > AUTO_TRACK_M * AUTO_TRACK_M) {
+        p.saved_next = g->sample_us + 10000000;   /* rajast kaugel – proovi 10 s pärast uuesti */
+        return;
+    }
+    p.saved_next = INT64_MAX;
     ensure_buffers();
     set_line(t.lat0, t.lon0, t.course);
     memcpy(L.gate, t.gate, sizeof(L.gate));
@@ -312,7 +318,7 @@ void lap_sample(const dash_state_t *s)
     if (g->samples == p.last_sample) return;
     p.last_sample = g->samples;
     if (g->speed_kmh > 5) p.moving_course = g->course;
-    if (!L.line_set && !p.saved_checked) try_saved_track(g);
+    if (!L.line_set && g->sample_us >= p.saved_next) try_saved_track(g);
     if (!L.line_set) return;
     ensure_buffers();
     if (!p.cur || !p.ref) return;

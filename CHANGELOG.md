@@ -1,5 +1,18 @@
 # Muudatused
 
+## v0.4.4 – 2026-11-20
+- Demorežiim plaadil ei loe enam läbisõitu, mootoritunde ega reisi kütust ning ei kirjuta hoiatuste logi ega
+  SD-kaardi logi (simulaatoris endiselt kirjutab).
+- Seaded ja läbisõit jäävad alles ka siis, kui uuem versioon lisab neile välju (vanem salvestus loetakse sisse).
+- Salvestatud rada aktiveerub ka siis, kui dash käivitati rajast kaugel (kontroll iga 10 s).
+- ECU nuppude CAN-kaadrit ei kirjutata enam üle, kui siinil keegi kaadreid ei kinnita.
+- „Vaheta käiku“ on alati vähemalt 100 rpm üle „Esimene tuli“ (võrdsed väärtused rikkusid RACE vaate tuled).
+- KELLAD vaate ülerõhk järgib ühikute seadet (bar/psi).
+- DIAG → KIIRUSE TEST ei peata enam ekraani (test käib logija taskis).
+- Simulaatoritel üks ühine leht (`tools/sim/index.html`), testid `tools/test/run.sh`.
+- Parandus: liiga pikk tekst (pikem kui sildi vahemälu) joonistati igas kaadris uuesti; nüüd ainult muutumisel
+  (pikka teksti võrreldakse räsi järgi, nii et ka lõpu muutus jõuab ekraanile).
+
 ## v0.4.3 – 2026-11-19
 - **Diagnostika** (SEADED → DIAG) paigalduseks ja vigade otsimiseks: CAN-kaadrid ID-de kaupa koos sagedusega
   (MaxxECU N/22), CAN kontrolleri olek, veaarvurid, bus-off ja kadunud kaadrid; GPS-i olek ja toorlaused;

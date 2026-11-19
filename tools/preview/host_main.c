@@ -13,6 +13,7 @@ int64_t g_fake_time_us = 1000000;
 static bool s_demo;
 void demo_set_enabled(bool on){ s_demo = on; }
 bool demo_is_enabled(void){ return s_demo; }
+bool demo_skip_records(void){ return false; }
 static uint32_t fb[1024*600];
 static void flush(lv_display_t *d, const lv_area_t *a, uint8_t *px){
   (void)a; (void)px;

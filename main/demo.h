@@ -3,6 +3,8 @@
 
 /* Demorežiim: genereerib MaxxECU kaadreid ja saadab need läbi sama dekoodri. */
 void demo_set_enabled(bool on);
+/* true = ära salvesta läbisõitu, hoiatuste logi ega SD-logi (plaadil demo ajal; simulaatoris alati false) */
+bool demo_skip_records(void);
 bool demo_is_enabled(void);
 void demo_start_task(void);
 /* Üks 20 ms samm sõidumudelist (demo_start_task kutsub seda ise) */

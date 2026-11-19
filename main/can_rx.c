@@ -137,9 +137,12 @@ bool can_send(uint32_t id, const uint8_t *data, uint8_t len)
     return false;
 #else
     if (!s_node || len > 8) return false;
-    static uint8_t buf[4][8];          /* kaadri andmed peavad püsima kuni saatmiseni */
+    /* järjekord täis (nt keegi ei kinnita kaadreid) → ära kirjuta üle puhvrit, mida draiver veel saadab */
+    twai_node_status_t st;
+    if (twai_node_get_info(s_node, &st, NULL) != ESP_OK || st.tx_queue_remaining == 0) return false;
+    static uint8_t buf[5][8];          /* järjekord (4) + parasjagu saatmisel olev kaader */
     static int slot;
-    slot = (slot + 1) % 4;
+    slot = (slot + 1) % 5;
     memcpy(buf[slot], data, len);
     twai_frame_t f = { .header = { .id = id, .dlc = len }, .buffer = buf[slot], .buffer_len = len };
     return twai_node_transmit(s_node, &f, 0) == ESP_OK;

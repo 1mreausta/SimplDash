@@ -11,6 +11,9 @@ static const dash_warning_t WARN[] = DASH_WARNINGS;
 #define N_WARN ((int)(sizeof(WARN) / sizeof(WARN[0])))
 _Static_assert(sizeof(WARN) / sizeof(WARN[0]) <= SET_MAX_WARN, "liiga palju hoiatusi");
 
+#define SHIFT_MIN 1000
+#define SHIFT_MAX 12000
+
 static int64_t s_dirty_us;
 static bool s_dirty;
 
@@ -170,8 +173,8 @@ static void build(void)
         fval(key, lbl, &g_set.oil_kpa[i], 0, 1000, 10, 1, UK_KPA, "", false);
     }
     head("SHIFT-LIGHT");
-    ival("shift_start", "Esimene tuli", &g_set.shift_start, 2, 1000, 12000, 100, "rpm");
-    ival("shift_flash", "Vaheta käiku (vilgub)", &g_set.shift_flash, 2, 1000, 12000, 100, "rpm");
+    ival("shift_start", "Esimene tuli", &g_set.shift_start, 2, SHIFT_MIN, SHIFT_MAX - 100, 100, "rpm");
+    ival("shift_flash", "Vaheta käiku (vilgub)", &g_set.shift_flash, 2, SHIFT_MIN + 100, SHIFT_MAX, 100, "rpm");
     head("MOOTOR");
     ival("inj_cc", "Pihusti vooluhulk", &g_set.inj_cc, 2, 50, 3000, 10, "cc/min");
     ival("cyl", "Silindreid", &g_set.cylinders, 1, 1, 16, 1, "");
@@ -286,6 +289,21 @@ void settings_item_text(const set_item_t *it, char *buf, int cap)
     }
 }
 
+/* "Vaheta käiku" peab olema vähemalt 100 rpm üle "Esimene tuli" (muidu RACE vaade jagab nulliga);
+ * muudetud väärtus jääb, teine nihkub kaasa */
+static void fix_shift(const void *changed)
+{
+    if (g_set.shift_flash < g_set.shift_start + 100) {
+        if (changed == &g_set.shift_flash) g_set.shift_start = (int16_t)(g_set.shift_flash - 100);
+        else g_set.shift_flash = (int16_t)(g_set.shift_start + 100);
+    }
+    /* nihutatud väärtus ei tohi minna üle seade piiride */
+    if (g_set.shift_flash > SHIFT_MAX) g_set.shift_flash = SHIFT_MAX;
+    if (g_set.shift_flash < SHIFT_MIN + 100) g_set.shift_flash = SHIFT_MIN + 100;
+    if (g_set.shift_start > g_set.shift_flash - 100) g_set.shift_start = (int16_t)(g_set.shift_flash - 100);
+    if (g_set.shift_start < SHIFT_MIN) g_set.shift_start = SHIFT_MIN;
+}
+
 void settings_item_step(const set_item_t *it, int dir)
 {
     switch (it->type) {
@@ -314,6 +332,7 @@ void settings_item_step(const set_item_t *it, int dir)
         break;
     }
     }
+    fix_shift(it->ptr);
     settings_changed();
 }
 
@@ -359,6 +378,7 @@ bool settings_item_set(const set_item_t *it, const char *txt)
     }
     }
 done:
+    fix_shift(it->ptr);
     settings_changed();
     return true;
 }
@@ -367,10 +387,11 @@ done:
 void settings_init(void)
 {
     defaults(&g_set);
-    dash_settings_t c;
-    if (store_load("settings", &c, sizeof(c)) && c.version == SET_VERSION) g_set = c;
+    dash_settings_t c = g_set;   /* vanemas versioonis puuduvad väljad jäävad vaikeväärtusteks */
+    if (store_load_grow("settings", &c, sizeof(c)) && c.version == SET_VERSION) g_set = c;
     g_set.wifi_ssid[sizeof(g_set.wifi_ssid) - 1] = 0;
     g_set.wifi_pass[sizeof(g_set.wifi_pass) - 1] = 0;
+    fix_shift(NULL);
 }
 
 void settings_changed(void)
@@ -387,7 +408,7 @@ void settings_tick(int64_t now_us)
         return;
     }
     if (now_us - s_dirty_us > 2000000) {
-        store_save("settings", &g_set, sizeof(g_set));
+        store_save("settings", &g_set, SET_DATA_END);
         s_dirty = false;
     }
 }

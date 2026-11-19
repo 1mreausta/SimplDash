@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "demo.h"
 #include "settings.h"
 
 typedef struct { sig_id_t sig; const char *name; } log_ch_t;
@@ -23,6 +24,10 @@ static struct {
     bool     lap_pending;
     FILE    *f;
 } lg;
+
+static volatile float s_speed;          /* logger_speed_result() */
+static volatile bool s_speed_req;
+static float speed_test(void);
 
 /* --- kirjutamine: plaadil eraldi task + puhver, simulaatoris otse ------------------ */
 #ifndef DASH_HOST
@@ -111,6 +116,10 @@ static void writer_task(void *arg)
             file_open();
             s_cmd = 0;
         }
+        if (s_speed_req) {
+            s_speed_req = false;
+            s_speed = speed_test();
+        }
         size_t n = xStreamBufferReceive(s_sb, buf, sizeof(buf), pdMS_TO_TICKS(200));
         if (n && lg.f) {
             if (fwrite(buf, 1, n, lg.f) != n) lg.error = true;
@@ -173,7 +182,7 @@ static int64_t now_us(void)
 }
 #endif
 
-float logger_speed_test(void)
+static float speed_test(void)
 {
     if (!lg.card) return -1;
     char p[128];
@@ -193,6 +202,23 @@ float logger_speed_test(void)
     if (!ok || dt <= 0) return -1;
     return 256.0f * 1e6f / (float)dt;
 }
+
+void logger_speed_test_start(void)
+{
+    if (s_speed == -2) return;
+    if (!lg.card) {
+        s_speed = -1;
+        return;
+    }
+    s_speed = -2;
+#ifndef DASH_HOST
+    s_speed_req = true;   /* writer_task teeb */
+#else
+    s_speed = speed_test();
+#endif
+}
+
+float logger_speed_result(void) { return s_speed; }
 
 const char *logger_dir(void)
 {
@@ -266,6 +292,7 @@ void logger_update(const dash_state_t *s)
     bool want = false;
     if (g_set.log_mode == 1) want = !s->stale && s->rpm > 300;
     else if (g_set.log_mode == 2) want = !s->stale;
+    if (demo_skip_records()) want = false;   /* demosõitu ei logita */
 
     if (want) lg.idle_since = 0;
     if (lg.active && !want) {

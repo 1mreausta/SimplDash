@@ -55,12 +55,26 @@ lv_obj_t *dash_label(lv_obj_t *parent, int px, lv_color_t color, const char *txt
     return l;
 }
 
+/* Tekst on uus, kui see erineb vahemälus olevast. Mahub vahemällu → hoitakse teksti ennast.
+ * Liiga pikk tekst → hoitakse selle räsi (märk 0x1F + 8 hex-numbrit), et iga muutus, ka lõpus,
+ * jõuaks ekraanile, aga muutumatut teksti ei joonistataks igas kaadris uuesti. */
 void dash_set_text_if(lv_obj_t *l, char *cache, size_t cap, const char *txt)
 {
-    if (strncmp(cache, txt, cap) != 0) {
-        size_t n = strnlen(txt, cap - 1);  /* tahtlik kärpimine vahemälu suurusele */
-        memcpy(cache, txt, n);
-        cache[n] = 0;
+    size_t len = strlen(txt);
+    if (len < cap) {
+        if (strcmp(cache, txt) != 0) {
+            memcpy(cache, txt, len + 1);
+            lv_label_set_text(l, txt);
+        }
+        return;
+    }
+    /* shortcut: 32-bitine räsi – kokkulangemisel (~1 : 4 miljardit) jääb vana tekst; piisav siltide jaoks */
+    uint32_t h = 2166136261u;                        /* FNV-1a */
+    for (const unsigned char *c = (const unsigned char *)txt; *c; c++) h = (h ^ *c) * 16777619u;
+    char tag[12];
+    snprintf(tag, sizeof(tag), "\x1F%08X", (unsigned)h);
+    if (cap < sizeof(tag) || strncmp(cache, tag, cap) != 0) {
+        snprintf(cache, cap, "%s", tag);
         lv_label_set_text(l, txt);
     }
 }
@@ -120,7 +134,7 @@ static const dash_warning_t WARN[] = DASH_WARNINGS;
 
 bool dash_sig_alarm(const dash_state_t *s, sig_id_t sig)
 {
-    for (size_t i = 0; i < sizeof(WARN) / sizeof(WARN[0]) && i < DASH_MAX_WARN; i++) {
+    for (size_t i = 0; i < sizeof(WARN) / sizeof(WARN[0]) && i < SET_MAX_WARN; i++) {
         if (WARN[i].sig == sig && s->warn[i]) return true;
     }
     return false;

@@ -52,6 +52,7 @@ static struct {
     vbar_t  bl, br;
     dash_tile_obj_t bottom[N_BOTTOM];
     dash_flags_t flags;
+    dash_tile_t boost_cfg;   /* ühikud seadete järgi (bar/psi) */
 } p;
 
 static lv_style_t st_red_ind, st_red_items;
@@ -229,8 +230,9 @@ static void create(lv_obj_t *scr)
     lv_label_set_text(rl, "RPM");
 
     p.speed = centered_label(scr, 120, C_TEXT, CX_R - 110, CY - 92, 220);
+    p.boost_cfg = dash_units((dash_tile_t){ SIG_BOOST_BAR, "ÜLERÕHK", "bar", 2, 1.0f });
     lv_obj_t *bl = centered_label(scr, 15, C_DIM, CX_R - 60, CY + 50, 120);
-    lv_label_set_text(bl, "ÜLERÕHK bar");
+    lv_label_set_text_fmt(bl, "ÜLERÕHK %s", p.boost_cfg.unit);
     p.boost = centered_label(scr, 32, C_TEXT, CX_R - 80, CY + 68, 160);
 
     /* Keskmine tulp */
@@ -291,8 +293,7 @@ static void update(const dash_state_t *s)
     dash_set_text_if(p.rpm, p.rpm_txt, sizeof(p.rpm_txt), buf);
     snprintf(buf, sizeof(buf), "%d", (int)(spd + 0.5f));
     dash_set_text_if(p.speed, p.speed_txt, sizeof(p.speed_txt), buf);
-    if (s->d.valid[SIG_BOOST_BAR]) snprintf(buf, sizeof(buf), "%.2f", s->d.v[SIG_BOOST_BAR]);
-    else snprintf(buf, sizeof(buf), "--");
+    dash_fmt(s, &p.boost_cfg, buf, sizeof(buf));
     dash_set_text_if(p.boost, p.boost_txt, sizeof(p.boost_txt), buf);
 
     for (size_t i = 0; i < N_CENTER; i++) {

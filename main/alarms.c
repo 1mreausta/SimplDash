@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include "demo.h"
 #include "settings.h"
 #include "stats.h"
 #include "store.h"
@@ -78,6 +79,7 @@ const char *alarms_event_label(const alarm_event_t *e)
 
 static void add_event(const dash_state_t *s, int kind, int idx, float value, float limit)
 {
+    if (demo_skip_records()) return;   /* demo hoiatused ainult ekraanil, mitte logis */
     alarm_event_t *e = &a.log[a.head];
     memset(e, 0, sizeof(*e));
     e->uptime_s = (uint32_t)(s->now_us / 1000000);

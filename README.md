@@ -85,7 +85,7 @@ Iga [reliisi](https://github.com/1mreausta/SimplDash/releases) juures on kaks fa
   Flash Address `0x0`, vali fail `simpldash-vX.Y.bin` → Program; või
 - **käsurealt:** `pip install esptool`, siis
   ```bash
-  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.4.3.bin
+  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.4.4.bin
   ```
 
 > **v0.3 või vanemalt v0.4-le: kindlasti USB kaudu, terve fail aadressile 0x0.** Versioonis 0.4 muutus välkmälu
@@ -312,6 +312,8 @@ Kõik näidikud, hoiatuspiirid, shift-lightid ja iga vaate näidikud:
 Suur osa seadeid (piirid, õlirõhu kõver, shift-light, pihustid, ühikud °C/°F ja bar/psi, ajavöönd, logimine,
 Wi-Fi, vaadete peitmine) on muudetavad ka ekraanil (**SEADED**) ja telefonist – siis pole vaja püsivara
 uuesti laadida. `dash_config.h` väärtused on vaikeväärtused (SEADED → telefonis *Vaikeseaded* taastab need).
+Ühikud (°F, psi) kehtivad numbritele ja ribadele; osutitega kellade skaalad (KLASSIKA, KELLAD kaared)
+jäävad alati meetrilisteks (°C, bar, km/h).
 CAN-pinnid, bitikiirus, listen-only: `idf.py menuconfig` → SimplDash.
 
 ## Simulaator arvutis (interaktiivne, ilma plaadita)
@@ -337,6 +339,12 @@ source ~/esp/tools/emsdk/emsdk_env.sh   # Emscripten
 tools/web/build.sh                      # → tools/web/dist/ (index.html, simpldash.js, simpldash.wasm)
 tools/web/deploy.sh                     # kompileerib ja avaldab gh-pages harusse
 ```
+
+## Testid arvutis
+```bash
+tools/test/run.sh             # dekooder, õlirõhu kõver, ringi joon, veebilehe seadete sisend, sildi tekst
+```
+Kasutab sama koodi nagu plaat (vajab LVGL-i objektifaile – käivita enne korra `tools/preview/build.sh`).
 
 ## Eelvaade arvutis (ilma plaadita)
 ```bash

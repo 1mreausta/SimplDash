@@ -29,7 +29,6 @@
 #define C_ACCENT  lv_color_hex(0x00D4FF)
 #define C_LIMIT   lv_color_hex(0x3A0B0B)
 
-#define DASH_MAX_WARN 16   /* = SET_MAX_WARN (settings.h) */
 
 /* Ühe UI-kaadri olek – arvutatakse kord ja antakse aktiivsele vaatele */
 typedef struct dash_state_s {
@@ -40,7 +39,7 @@ typedef struct dash_state_s {
     bool  flashing;     /* rpm >= DASH_SHIFT_FLASH */
     float rpm;
     int   rev_limit;
-    bool  warn[DASH_MAX_WARN];
+    bool  warn[SET_MAX_WARN];
     int   n_warn;            /* aktiivseid hoiatusi (ka ECU olek) */
     char  warn_txt[96];      /* hoiatusriba tekst */
     bool  alert_full;        /* täisekraani hoiatus */

@@ -3,6 +3,7 @@
  * Kütus arvutatakse pihustite töötsüklist (seaded: pihusti cc/min × silindrid).
  */
 #pragma once
+#include <stddef.h>
 #include <stdint.h>
 #include "dash_common.h"
 
@@ -13,7 +14,9 @@ typedef struct {
     double   trip_m;
     float    trip_fuel_l;
     uint32_t trip_s;         /* mootori töötamise aeg reisil */
+    /* UUED VÄLJAD SIIA (lõppu) ja uuenda STATS_DATA_END */
 } dash_stats_t;
+#define STATS_DATA_END (offsetof(dash_stats_t, trip_s) + sizeof(uint32_t))   /* ilma lõpu täiteta, vt SET_DATA_END */
 
 void stats_init(void);
 void stats_update(const dash_state_t *s);

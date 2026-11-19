@@ -47,7 +47,6 @@ static struct {
     char      t_dg_can[120], t_dg_cs[120], t_dg_col[4][400], t_dg_gps[120], t_dg_gpsl[560], t_dg_sd[120],
               t_dg_sys[200];
     int64_t   dg_next;
-    float     dg_speed;
 } p;
 
 /* libistamine nuppudel/loendil jõuab ekraanini (vaate vahetus) */
@@ -257,7 +256,7 @@ static void create_info(lv_obj_t *v)
 static void on_sd_test(lv_event_t *e)
 {
     (void)e;
-    p.dg_speed = logger_speed_test();
+    logger_speed_test_start();
     p.dg_next = 0;
 }
 
@@ -309,7 +308,6 @@ static void create_diag(lv_obj_t *v)
     p.dg_sys = dlabel(v, x, 362, 18, C_TEXT);
     lv_obj_set_width(p.dg_sys, W - x - 16);
     lv_label_set_long_mode(p.dg_sys, LV_LABEL_LONG_MODE_WRAP);
-    p.dg_speed = 0;
 }
 
 static void update_diag(const dash_state_t *s)
@@ -394,9 +392,10 @@ static void update_diag(const dash_state_t *s)
     if (!logger_space(&tot, &fr)) snprintf(b, sizeof(b), "kaarti pole (või ei saa lugeda)");
     else {
         int l = snprintf(b, sizeof(b), "%.1f GB, vaba %.1f GB%s", tot / 1e9, fr / 1e9, ls.error ? "  ·  KIRJUTUSVIGA" : "");
-        if (p.dg_speed > 0) snprintf(b + l, sizeof(b) - l, "  ·  kirjutus %.0f kB/s%s", p.dg_speed,
-                                     p.dg_speed < 200 ? " (aeglane!)" : "");
-        else if (p.dg_speed < 0) snprintf(b + l, sizeof(b) - l, "  ·  test EBAÕNNESTUS");
+        float sp = logger_speed_result();
+        if (sp > 0) snprintf(b + l, sizeof(b) - l, "  ·  kirjutus %.0f kB/s%s", sp, sp < 200 ? " (aeglane!)" : "");
+        else if (sp == -2) snprintf(b + l, sizeof(b) - l, "  ·  testin…");
+        else if (sp == -1) snprintf(b + l, sizeof(b) - l, "  ·  test EBAÕNNESTUS");
     }
     dash_set_text_if(p.dg_sd, p.t_dg_sd, sizeof(p.t_dg_sd), b);
 

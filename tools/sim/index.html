@@ -2,6 +2,7 @@
 <html lang="et">
 <head>
 <meta charset="utf-8">
+<meta name="description" content="SimplDash – MaxxECU race dash simulaator brauseris">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SimplDash simulaator v__SIMPLDASH_VERSION__</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctitle%3ESimplDash%3C/title%3E%3Cdefs%3E%3ClinearGradient id='i1_bg' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23151a21'/%3E%3Cstop offset='1' stop-color='%2305070a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23i1_bg)'/%3E%3Cdefs%3E%3CradialGradient id='i1_g' cx='32' cy='36' r='20' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%2300d4ff' stop-opacity='.35'/%3E%3Cstop offset='1' stop-color='%2300d4ff' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='36' r='20' fill='url(%23i1_g)'/%3E%3Cpath d='M17.35 49.61 A20 20 0 0 1 14.52 45.73 L9.28 48.64 A26 26 0 0 0 12.95 53.70 Z' fill='%2300d4ff'/%3E%3Cpath d='M13.86 44.42 A20 20 0 0 1 12.37 39.85 L6.49 41.01 A26 26 0 0 0 8.42 46.95 Z' fill='%2300d4ff'/%3E%3Cpath d='M12.14 38.40 A20 20 0 0 1 12.14 33.60 L6.19 32.88 A26 26 0 0 0 6.19 39.12 Z' fill='%2300d4ff'/%3E%3Cpath d='M12.37 32.15 A20 20 0 0 1 13.86 27.58 L8.42 25.05 A26 26 0 0 0 6.49 30.99 Z' fill='%2300d4ff'/%3E%3Cpath d='M14.52 26.27 A20 20 0 0 1 17.35 22.39 L12.95 18.30 A26 26 0 0 0 9.28 23.36 Z' fill='%2300d4ff'/%3E%3Cpath d='M18.39 21.35 A20 20 0 0 1 22.27 18.52 L19.36 13.28 A26 26 0 0 0 14.30 16.95 Z' fill='%2300d4ff'/%3E%3Cpath d='M23.58 17.86 A20 20 0 0 1 28.15 16.37 L26.99 10.49 A26 26 0 0 0 21.05 12.42 Z' fill='%2300d4ff'/%3E%3Cpath d='M29.60 16.14 A20 20 0 0 1 34.40 16.14 L35.12 10.19 A26 26 0 0 0 28.88 10.19 Z' fill='%2300d4ff'/%3E%3Cpath d='M35.85 16.37 A20 20 0 0 1 40.42 17.86 L42.95 12.42 A26 26 0 0 0 37.01 10.49 Z' fill='%2300d4ff'/%3E%3Cpath d='M41.73 18.52 A20 20 0 0 1 45.61 21.35 L49.70 16.95 A26 26 0 0 0 44.64 13.28 Z' fill='%2300d4ff'/%3E%3Cpath d='M46.65 22.39 A20 20 0 0 1 49.48 26.27 L54.72 23.36 A26 26 0 0 0 51.05 18.30 Z' fill='%23ffd21f'/%3E%3Cpath d='M50.14 27.58 A20 20 0 0 1 51.63 32.15 L57.51 30.99 A26 26 0 0 0 55.58 25.05 Z' fill='%23ffd21f'/%3E%3Cpath d='M51.86 33.60 A20 20 0 0 1 51.86 38.40 L57.81 39.12 A26 26 0 0 0 57.81 32.88 Z' fill='%23ffd21f'/%3E%3Cpath d='M51.63 39.85 A20 20 0 0 1 50.14 44.42 L55.58 46.95 A26 26 0 0 0 57.51 41.01 Z' fill='%23ff2d2d'/%3E%3Cpath d='M49.48 45.73 A20 20 0 0 1 46.65 49.61 L51.05 53.70 A26 26 0 0 0 54.72 48.64 Z' fill='%23ff2d2d'/%3E%3Cpath d='M32.00 36.00 L53.31 30.53' stroke='%23ff2d2d' stroke-width='3.2' stroke-linecap='round'/%3E%3Ccircle cx='32' cy='36' r='5' fill='%231c222b' stroke='%23ff2d2d' stroke-width='2'/%3E%3C/svg%3E">
@@ -50,78 +51,119 @@
   <button id="boot">Käivitusekraan<kbd>B</kbd></button>
 </div>
 <div id="status">ühendan…</div>
-<div class="help">Hiir = puuteekraan: <b>libista</b> vasakule/paremale = vaade · <b>klõps</b> = heledus ·
+<div class="help" data-mode="http">Hiir = puuteekraan: <b>libista</b> vasakule/paremale = vaade · <b>klõps</b> = heledus ·
   <b>hoia 3 s</b> = demorežiim · GPS-iga lisanduvad vaated 0–100, RING ja RADA ning kell · ANDMED vaates „NULLI TIPUD“ nupp töötab klõpsuga · SEADED vaates ECU nupud, seaded, sõit ja hoiatuste logi · <a href="/web" target="_blank">telefoni veebileht</a> (plaadil Wi-Fi kaudu).</div>
+<div class="help" data-mode="wasm">Sama kood, mis jookseb päris dashi plaadil (ESP32-P4), siin brauseris (WebAssembly). Hiir = puuteekraan: <b>libista</b> vasakule/paremale = vaade · <b>klõps</b> = heledus ·
+  <b>hoia 3 s</b> = demorežiim · GPS-iga lisanduvad vaated 0–100, RING ja RADA ning kell · ANDMED vaates „NULLI TIPUD“ nupp töötab klõpsuga · SEADED vaates ECU nupud, seaded, sõit ja hoiatuste logi. · <a href="https://github.com/1mreausta/SimplDash">GitHub</a></div>
 <script>
+/* Üks leht mõlemale simulaatorile: "http" = tools/sim (Maci server), "wasm" = tools/web (GitHub Pages).
+ * Ehitusskript asendab __SIM_MODE__. */
+const MODE = '__SIM_MODE__';
+for (const el of document.querySelectorAll('[data-mode]')) if (el.dataset.mode !== MODE) el.remove();
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 const img = ctx.createImageData(1024, 600), px = new Uint32Array(img.data.buffer);
 const st = document.getElementById('status');
 const PAGES = ['RACE', 'KELLAD', 'KAAR', 'TÄNAV', 'KLASSIKA', '0–100', 'RING', 'RADA', 'ANDMED', 'SEADED'];
 const SRC = ['ECU', 'GPS', 'AUTO'];
-function setSrc(v) { const b = document.getElementById('src'); b.firstChild.nodeValue = 'Kiirus: ' + SRC[v]; }
-let since = 0, down = false, fps = 0, frames = 0, last = performance.now();
+let fps = 0, frames = 0, last = performance.now();
 
 /* RGB565 → RGBA lookup */
 const R5 = new Uint8Array(32), G6 = new Uint8Array(64);
 for (let i = 0; i < 32; i++) R5[i] = (i * 527 + 23) >> 6;
 for (let i = 0; i < 64; i++) G6[i] = (i * 259 + 33) >> 6;
 
-async function loop() {
-  try {
-    const r = await fetch('/frame?since=' + since);
-    since = +r.headers.get('X-Frame');
-    const b = +r.headers.get('X-Bright');
-    const [demo, can, hot, page, gps, src, knock] = (r.headers.get('X-State') || '0,1,0,0,0,2,0').split(',').map(Number);
-    cv.style.filter = 'brightness(' + (0.25 + 0.75 * b / 100) + ')';
-    set('demo', demo, 'on'); set('can', can, 'on'); set('hot', hot, 'alert'); set('knock', knock, 'alert'); set('gps', gps, 'on'); setSrc(src);
-    const buf = await r.arrayBuffer();
-    if (buf.byteLength === 1024 * 600 * 2) {
-      const s = new Uint16Array(buf);
-      for (let i = 0; i < s.length; i++) {
-        const v = s[i];
-        px[i] = 0xff000000 | (R5[v & 31] << 16) | (G6[(v >> 5) & 63] << 8) | R5[v >> 11];
-      }
-      ctx.putImageData(img, 0, 0);
-      frames++;
-    }
-    const now = performance.now();
-    if (now - last > 1000) { fps = frames; frames = 0; last = now; }
-    st.textContent = 'vaade: ' + (PAGES[page] || page) + ' · heledus ' + b + ' % · ' + fps + ' kaadrit/s';
-  } catch (e) {
-    st.textContent = 'simulaator ei vasta – kas tools/sim/run.sh töötab?';
-    await new Promise(r => setTimeout(r, 1000));
-  }
-  setTimeout(loop, 30);
-}
 function set(id, on, cls) { document.getElementById(id).classList.toggle(cls, !!on); }
+function blit(s) {
+  for (let i = 0; i < s.length; i++) {
+    const v = s[i];
+    px[i] = 0xff000000 | (R5[v & 31] << 16) | (G6[(v >> 5) & 63] << 8) | R5[v >> 11];
+  }
+  ctx.putImageData(img, 0, 0);
+  frames++;
+}
+/* olek: demo, can, hot, page, gps, src, knock, heledus */
+function show(o) {
+  cv.style.filter = 'brightness(' + (0.25 + 0.75 * o.bright / 100) + ')';
+  set('demo', o.demo, 'on'); set('can', o.can, 'on'); set('hot', o.hot, 'alert'); set('knock', o.knock, 'alert');
+  set('gps', o.gps, 'on');
+  document.getElementById('src').firstChild.nodeValue = 'Kiirus: ' + SRC[o.src];
+  const now = performance.now();
+  if (now - last > 1000) { fps = frames; frames = 0; last = now; }
+  st.textContent = 'vaade: ' + (PAGES[o.page] || o.page) + ' · heledus ' + o.bright + ' % · ' + fps + ' kaadrit/s';
+}
+
+/* --- ühendus simulaatoriga: HTTP või WebAssembly --- */
+let T;
+if (MODE === 'http') {
+  let since = 0, lastMove = 0;
+  T = {
+    key: k => fetch('/key?k=' + k),
+    pointer: (x, y, p, move) => {
+      if (move && performance.now() - lastMove < 30) return;
+      lastMove = performance.now();
+      fetch('/in?x=' + x + '&y=' + y + '&p=' + p);
+    },
+  };
+  (async function loop() {
+    try {
+      const r = await fetch('/frame?since=' + since);
+      since = +r.headers.get('X-Frame');
+      const [demo, can, hot, page, gps, src, knock] = (r.headers.get('X-State') || '0,1,0,0,0,2,0').split(',').map(Number);
+      const buf = await r.arrayBuffer();
+      if (buf.byteLength === 1024 * 600 * 2) blit(new Uint16Array(buf));
+      show({ demo, can, hot, page, gps, src, knock, bright: +r.headers.get('X-Bright') });
+    } catch (e) {
+      st.textContent = 'simulaator ei vasta – kas tools/sim/run.sh töötab?';
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    setTimeout(loop, 30);
+  })();
+  T.key('boot');   /* lehe avamisel käivitusekraan nagu süüte sisselülitamisel */
+} else {
+  const KEYS = { next: 1, prev: 2, demo: 3, can: 4, hot: 5, src: 6, gps: 7, knock: 8, boot: 9 };
+  let lastFrame = 0;
+  T = {
+    key: k => Module._sim_key && Module._sim_key(KEYS[k]),
+    pointer: (x, y, p) => Module._sim_pointer && Module._sim_pointer(x, y, p),
+  };
+  function draw() {
+    const n = Module._sim_frame_no();
+    if (n !== lastFrame) {
+      lastFrame = n;
+      blit(new Uint16Array(Module.HEAPU16.buffer, Module._sim_fb(), 1024 * 600));
+    }
+    const s = Module._sim_state();
+    show({ demo: s & 1, can: s & 2, hot: s & 4, gps: s & 8, page: (s >> 4) & 15, bright: (s >> 8) & 255,
+           src: (s >> 16) & 3, knock: s & (1 << 18) });
+    requestAnimationFrame(draw);
+  }
+  window.Module = {
+    onRuntimeInitialized() { st.textContent = 'käivitan…'; requestAnimationFrame(draw); },
+    print: t => console.log(t), printErr: t => console.warn(t),
+  };
+  st.textContent = 'laadin…';
+  const sc = document.createElement('script');
+  sc.src = 'simpldash.js';
+  document.body.appendChild(sc);
+}
 
 function pos(e) {
   const r = cv.getBoundingClientRect();
   return [Math.round((e.clientX - r.left) * 1024 / r.width), Math.round((e.clientY - r.top) * 600 / r.height)];
 }
-function send(e, p) { const [x, y] = pos(e); fetch('/in?x=' + x + '&y=' + y + '&p=' + p); }
-let lastMove = 0;
+let down = false;
+const send = (e, p, move) => { const [x, y] = pos(e); T.pointer(x, y, p, move); };
 cv.addEventListener('pointerdown', e => { down = true; cv.setPointerCapture(e.pointerId); send(e, 1); });
-cv.addEventListener('pointermove', e => { if (down && performance.now() - lastMove > 30) { lastMove = performance.now(); send(e, 1); } });
+cv.addEventListener('pointermove', e => { if (down) send(e, 1, true); });
 cv.addEventListener('pointerup', e => { if (down) { down = false; send(e, 0); } });
 cv.addEventListener('pointercancel', e => { if (down) { down = false; send(e, 0); } });
 
-const key = k => fetch('/key?k=' + k);
-document.getElementById('prev').onclick = () => key('prev');
-document.getElementById('next').onclick = () => key('next');
-document.getElementById('demo').onclick = () => key('demo');
-document.getElementById('can').onclick = () => key('can');
-document.getElementById('hot').onclick = () => key('hot');
-document.getElementById('gps').onclick = () => key('gps');
-document.getElementById('src').onclick = () => key('src');
-document.getElementById('knock').onclick = () => key('knock');
-document.getElementById('boot').onclick = () => key('boot');
-key('boot');   /* lehe avamisel käivitusekraan nagu süüte sisselülitamisel */
+for (const id of ['prev', 'next', 'demo', 'can', 'hot', 'gps', 'src', 'knock', 'boot'])
+  document.getElementById(id).onclick = () => T.key(id);
 addEventListener('keydown', e => {
   const m = { ArrowLeft: 'prev', ArrowRight: 'next', d: 'demo', D: 'demo', c: 'can', C: 'can', h: 'hot', H: 'hot', k: 'knock', K: 'knock', b: 'boot', B: 'boot', g: 'gps', G: 'gps', s: 'src', S: 'src' }[e.key];
-  if (m) { e.preventDefault(); key(m); }
+  if (m) { e.preventDefault(); T.key(m); }
 });
-loop();
 
 /* mahuta ekraan aknasse ilma kerimiseta (säilita 1024:600) */
 function fit() {

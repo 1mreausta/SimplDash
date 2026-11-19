@@ -45,5 +45,6 @@ emcc $CFLAGS web_main.c "$OBJ/font_data.c" \
   -sEXPORTED_FUNCTIONS=_main,_sim_pointer,_sim_key,_sim_state,_sim_fb,_sim_frame_no,_sim_bench \
   -sEXPORTED_RUNTIME_METHODS=HEAPU16 -sENVIRONMENT=web
 VER=$(sed -n 's/.*SIMPLDASH_VERSION "\(.*\)".*/\1/p' "$M/version.h")
-sed "s/__SIMPLDASH_VERSION__/$VER/g" index.html > "$OUT/index.html"
+# sama leht mis Maci simulaatoril (tools/sim/index.html), WebAssembly režiimis
+sed "s/__SIMPLDASH_VERSION__/$VER/g; s/__SIM_MODE__/wasm/" ../sim/index.html > "$OUT/index.html"
 ls -la "$OUT"
