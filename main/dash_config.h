@@ -107,6 +107,20 @@ typedef struct {
 #define DASH_ACCEL_START_KMH  1.0f    /* liikumise algus */
 #define DASH_ACCEL_MAX_KMHS   60.0f   /* suurem kiirendus (km/h sekundis, ~1,7 g) = GPS-i viga, mõõtmine katkeb */
 
+/* RING vaate külgede näidikud (4 + 4) */
+#define DASH_LAP_LEFT { \
+    { SIG_CLT,        "VESI",        "°C",   0, 1.0f,  40, 120 }, \
+    { SIG_OIL_TEMP,   "ÕLI TEMP",    "°C",   0, 1.0f,  40, 150 }, \
+    { SIG_OIL_PRESS,  "ÕLI RÕHK",    "bar",  1, 0.01f, 0,  7   }, \
+    { SIG_FUEL_PRESS, "KÜTUSE RÕHK", "bar",  1, 0.01f, 0,  6   }, \
+}
+#define DASH_LAP_RIGHT { \
+    { SIG_SPEED,      "KIIRUS",      "km/h", 0, 1.0f,  0,  DASH_SPEED_MAX }, \
+    { SIG_BOOST_BAR,  "ÜLERÕHK",     "bar",  2, 1.0f,  -1, 2.5f }, \
+    { SIG_AFR,        "AFR",         "",     1, 1.0f,  10, 18  }, \
+    { SIG_BATT,       "AKU",         "V",    1, 1.0f,  10, 15  }, \
+}
+
 /* Ringiaeg: start/finiš joone laius (m) ja lühim võimalik ring (s) */
 #define DASH_LAP_GATE_M       25.0f
 #define DASH_LAP_MIN_S        10.0f    /* KELLAD vaate spidomeetri skaala lõpp (km/h) */

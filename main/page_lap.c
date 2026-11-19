@@ -11,6 +11,11 @@
 #include "gps_pages.h"
 
 #define N_HIST 5
+
+static const dash_tile_t TL[] = DASH_LAP_LEFT;
+static const dash_tile_t TR[] = DASH_LAP_RIGHT;
+#define N_TL (sizeof(TL) / sizeof(TL[0]))
+#define N_TR (sizeof(TR) / sizeof(TR[0]))
 #define DEG2RAD 0.017453292519943295
 
 static struct {
@@ -30,6 +35,7 @@ static struct {
     lv_obj_t *time, *info, *hint, *last_v, *best_v, *delta_v, *hist_l;
     char     t_time[16], t_info[40], t_last[16], t_best[16], t_delta[16], t_hist[96];
     int8_t   hint_shown, delta_col;
+    dash_tile_obj_t tiles[N_TL + N_TR];
     bool     time_on;
 } p;
 
@@ -154,20 +160,31 @@ static void create(lv_obj_t *scr)
     lv_obj_t *title = dash_label(scr, 30, C_DIM, "RINGIAEG");
     lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 8);
 
-    p.time = dash_label(scr, 170, C_DIM, "0:00.00");
-    lv_obj_set_width(p.time, 900);
+    /* külgedel 4 + 4 näidikut, keskel ringiaeg */
+    const int tw = 200, th = 86, tg = 8, ty = 46;
+    for (size_t i = 0; i < N_TL; i++) {
+        dash_tile_create(&p.tiles[i], &TL[i], scr, 12, ty + i * (th + tg), tw, th, 44);
+    }
+    for (size_t i = 0; i < N_TR; i++) {
+        dash_tile_create(&p.tiles[N_TL + i], &TR[i], scr, W - 12 - tw, ty + i * (th + tg), tw, th, 44);
+    }
+    const int cx = 12 + tw + 12, cw = W - 2 * cx;
+
+    p.time = dash_label(scr, 140, C_DIM, "0:00.00");
+    lv_obj_set_width(p.time, cw);
     lv_obj_set_style_text_align(p.time, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_pos(p.time, (W - 900) / 2, 76);
+    lv_obj_set_pos(p.time, cx, 96);
 
     p.info = dash_label(scr, 34, C_DIM, "");
-    lv_obj_set_width(p.info, 600);
+    lv_obj_set_width(p.info, cw);
     lv_obj_set_style_text_align(p.info, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_pos(p.info, (W - 600) / 2, 290);
+    lv_obj_set_pos(p.info, cx, 276);
 
     p.hint = dash_label(scr, 24, C_YELLOW, "Sõida start/finiš joonele ja vajuta  MÄRGI JOON");
-    lv_obj_set_width(p.hint, 900);
+    lv_obj_set_width(p.hint, cw);
+    lv_label_set_long_mode(p.hint, LV_LABEL_LONG_MODE_WRAP);
     lv_obj_set_style_text_align(p.hint, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_pos(p.hint, (W - 900) / 2, 352);
+    lv_obj_set_pos(p.hint, cx, 336);
     p.hint_shown = -1;
 
     lv_obj_t *b1 = panel(scr, 12, 240, "VIIMANE RING");
@@ -190,6 +207,7 @@ static void create(lv_obj_t *scr)
 static void update(const dash_state_t *s)
 {
     char buf[96];
+    for (size_t i = 0; i < N_TL + N_TR; i++) dash_tile_update(&p.tiles[i], s);
     if (p.running) dash_fmt_time((s->now_us - p.lap_start) / 1e6f, true, buf, 16);
     else snprintf(buf, 16, "0:00.00");
     dash_set_text_if(p.time, p.t_time, sizeof(p.t_time), buf);
@@ -243,4 +261,4 @@ static void update(const dash_state_t *s)
     dash_set_text_if(p.hist_l, p.t_hist, sizeof(p.t_hist), buf);
 }
 
-const dash_page_t page_lap = { "RING", 470, create, update, background, dash_need_gps, 938, 4, 16, 4, 856, 4 };
+const dash_page_t page_lap = { "RING", 346, create, update, background, dash_need_gps, 938, 4, 16, 4, 856, 4 };
