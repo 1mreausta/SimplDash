@@ -85,7 +85,7 @@ Iga [reliisi](https://github.com/1mreausta/SimplDash/releases) juures on kaks fa
   Flash Address `0x0`, vali fail `simpldash-vX.Y.bin` → Program; või
 - **käsurealt:** `pip install esptool`, siis
   ```bash
-  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.4.1.bin
+  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.4.2.bin
   ```
 
 > **v0.3 või vanemalt v0.4-le: kindlasti USB kaudu, terve fail aadressile 0x0.** Versioonis 0.4 muutus välkmälu
@@ -145,20 +145,27 @@ GPS-iga lisandub:
   vajuta rajal start/finiš joonel *MÄRGI JOON*) ja **RADA**. Need vaated on nähtavad ainult siis, kui GPS on ühendatud.
 - **vahe parima ringiga** (suur roheline/punane number RING ja RADA vaates): võrdleb sama kohta rajal parima ringiga;
 - **sektorid** S1–S3: esimese täisringi järel jagatakse rada kolmeks, iga sektori aeg ja parim (\* = parim sektor);
-- **RADA** vaates raja kaart parima ringi järgi, auto asukoht, start/finiš (valge) ja sektorite piirid (kollased);
+- **RADA** vaates raja kaart parima ringi järgi, auto asukoht, start/finiš (valge) ja sektorite piirid (kollased 1, 2);
+  nupud **MÄRGI START**, **SEKTORID** (piirid kaardil puudutusega) ja **AUTO**;
 - rada (joon ja sektorid) **jäetakse meelde**: järgmine kord samal rajal (3 km raadiuses) algab ajavõtt ise
   esimesel joone ületamisel. *NULLI AJAD* kustutab ajad, *MÄRGI JOON* alustab uue rajaga.
 
 **Rajapäeval (RING / RADA):**
-1. Sõida start/finiš joonele, peatu või sõida aeglaselt sõidusuunas ja vajuta RING vaates **MÄRGI JOON** –
-   joon salvestub sinu asukoha ja sõidusuuna järgi (laius ±25 m, `DASH_LAP_GATE_M`) ning esimene ring algab kohe.
+1. Sõida start/finiš joonele, peatu või sõida aeglaselt sõidusuunas ja vajuta **MÄRGI START** (RADA vaates) või
+   **MÄRGI JOON** (RING vaates) – joon salvestub sinu asukoha ja sõidusuuna järgi (laius ±25 m, `DASH_LAP_GATE_M`)
+   ning esimene ring algab kohe.
 2. Iga joone ületus samas suunas = uus ring (lühem kui 10 s ei loe – `DASH_LAP_MIN_S`).
-3. Esimese ringi järel tekib RADA vaatesse raja kaart ja rada jagatakse kolmeks sektoriks.
-4. Alates teisest ringist näed **vahet parima ringiga** samas kohas rajal: roheline −0.32 = oled kiirem,
+3. Esimese ringi ajal joonistub RADA vaatesse GPS-i järgi raja tegelik kuju; ringi lõpus jagatakse rada
+   automaatselt kolmeks võrdseks sektoriks (kollased täpid 1 ja 2 = S1 ja S2 lõpp).
+4. **Sektorid käsitsi** (nt kurvide järgi): RADA vaates **SEKTORID** → kaardi äär läheb kollaseks → puuduta kaardil
+   kohta, kus lõpeb S1, siis kohta, kus lõpeb S2 (piir läheb lähimasse raja punkti, mitte stardijoone kõrvale).
+   *LOOBU* katkestab, **AUTO** paneb sektorid tagasi automaatseks. Sektorite muutmisel nullitakse sektoriajad ja
+   käimasoleva ringi sektorid jäävad vahele. Sektorid jäetakse koos rajaga meelde.
+5. Alates teisest ringist näed **vahet parima ringiga** samas kohas rajal: roheline −0.32 = oled kiirem,
    punane +0.45 = aeglasem. Parem ring saab uueks võrdluseks automaatselt.
-5. Ringiajad ja sektorid kirjutatakse ka SD-kaardi logisse (veerud *Lap*, *Lap time s*).
+6. Ringiajad ja sektorid kirjutatakse ka SD-kaardi logisse (veerud *Lap*, *Lap time s*).
 
-Simulaatoris: nupud **GPS ühendatud** (G) ja **Kiirus: AUTO/ECU/GPS** (S); demo-auto sõidab ovaalsel rajal.
+Simulaatoris: nupud **GPS ühendatud** (G) ja **Kiirus: AUTO/ECU/GPS** (S); demo-auto sõidab ~2,3 km rajal (stardisirge, kurvid, juuspöörded, šikaan, S-kurvid).
 
 ## Kasutamine
 - **Süüte sisselülitamisel** näidatakse 2 s SimplDashi logo; shift-light'id süttivad järjest (tulede test) ja

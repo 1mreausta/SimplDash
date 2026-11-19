@@ -32,6 +32,7 @@ typedef struct {
     double   lat0, lon0;
     float    course;
     lap_gate_t gate[LAP_N_SECT - 1];
+    uint8_t  manual;
 } saved_track_t;
 
 const lap_info_t *lap_info(void) { return &L; }
@@ -72,7 +73,7 @@ static bool crossed(const lap_gate_t *g, double ax, double ay, double bx, double
 
 static void save_track(float course)
 {
-    saved_track_t t = { .ver = 1, .lat0 = p.lat0, .lon0 = p.lon0, .course = course };
+    saved_track_t t = { .ver = 2, .lat0 = p.lat0, .lon0 = p.lon0, .course = course, .manual = L.gates_manual };
     memcpy(t.gate, L.gate, sizeof(t.gate));
     store_save("track", &t, sizeof(t));
 }
@@ -95,6 +96,7 @@ void lap_set_line(double lat, double lon, float course_deg, bool start_now)
     ensure_buffers();
     set_line(lat, lon, course_deg);
     memset(L.gate, 0, sizeof(L.gate));
+    L.gates_manual = false;
     L.n_ref = 0;
     L.n_cur = 0;
     L.running = start_now;
@@ -147,6 +149,27 @@ void lap_reset_times(void)
     L.laps = 0;
 }
 
+/* värav raja punktis i (suund naabrite järgi) */
+static bool gate_at(int k, int i)
+{
+    if (i < 1) i = 1;
+    if (i > L.n_ref - 2) i = L.n_ref - 2;
+    double dx = L.ref[i + 1].x - L.ref[i - 1].x, dy = L.ref[i + 1].y - L.ref[i - 1].y;
+    double n = sqrt(dx * dx + dy * dy);
+    if (n < 0.1) return false;
+    L.gate[k] = (lap_gate_t){ L.ref[i].x, L.ref[i].y, dx / n, dy / n, true };
+    return true;
+}
+
+static void reset_sectors(void)
+{
+    memset(L.sec_cur, 0, sizeof(L.sec_cur));
+    memset(L.sec_last, 0, sizeof(L.sec_last));
+    memset(L.sec_best, 0, sizeof(L.sec_best));
+    L.sect = 0;
+    L.sec_start = L.lap_start;
+}
+
 /* sektorite väravad parima ringi 1/3 ja 2/3 teekonna kohale */
 static void make_gates(void)
 {
@@ -156,11 +179,54 @@ static void make_gates(void)
         float want = len * (k + 1) / LAP_N_SECT;
         int i = 1;
         while (i < L.n_ref - 2 && L.ref[i].d < want) i++;
-        double dx = L.ref[i + 1].x - L.ref[i - 1].x, dy = L.ref[i + 1].y - L.ref[i - 1].y;
-        double n = sqrt(dx * dx + dy * dy);
-        if (n < 0.1) return;
-        L.gate[k] = (lap_gate_t){ L.ref[i].x, L.ref[i].y, dx / n, dy / n, true };
+        if (!gate_at(k, i)) return;
     }
+    L.gates_manual = false;
+}
+
+/* lähim raja punkt (indeks) või -1 */
+static int nearest_ref(float x, float y, float max_m)
+{
+    int best = -1;
+    double bd = (double)max_m * max_m;
+    for (int i = 0; i < L.n_ref; i++) {
+        double dx = L.ref[i].x - x, dy = L.ref[i].y - y, d = dx * dx + dy * dy;
+        if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+}
+
+static void save_track(float course);
+
+bool lap_set_gate(int k, float x, float y)
+{
+    if (k < 0 || k >= LAP_N_SECT - 1 || L.n_ref < 20) return false;
+    int i = nearest_ref(x, y, 60);
+    if (i < 0) return false;
+    /* ära lase piiril olla stardijoonele liiga lähedal (ring algab/lõpeb seal) */
+    if (L.ref[i].d < 20 || L.ref[i].d > L.ref[L.n_ref - 1].d - 20) return false;
+    if (!gate_at(k, i)) return false;
+    /* järjekord rajal: S1 lõpp enne S2 lõppu – vajadusel vaheta */
+    if (L.gate[0].set && L.gate[1].set) {
+        int i0 = nearest_ref((float)L.gate[0].cx, (float)L.gate[0].cy, 1e6f);
+        int i1 = nearest_ref((float)L.gate[1].cx, (float)L.gate[1].cy, 1e6f);
+        if (i0 > i1) {
+            lap_gate_t t = L.gate[0];
+            L.gate[0] = L.gate[1];
+            L.gate[1] = t;
+        }
+    }
+    L.gates_manual = true;
+    reset_sectors();
+    save_track(atan2(L.line.dx, L.line.dy) / DEG2RAD);
+    return true;
+}
+
+void lap_auto_gates(void)
+{
+    make_gates();
+    reset_sectors();
+    save_track(atan2(L.line.dx, L.line.dy) / DEG2RAD);
 }
 
 /* delta: lähim punkt parimal ringil (otsitakse eelmise ümbert edasi) */
@@ -224,12 +290,13 @@ static void try_saved_track(const gps_data_t *g)
 {
     p.saved_checked = true;
     saved_track_t t;
-    if (!store_load("track", &t, sizeof(t)) || t.ver != 1) return;
+    if (!store_load("track", &t, sizeof(t)) || t.ver != 2) return;
     double dy = (g->lat - t.lat0) * 110540.0, dx = (g->lon - t.lon0) * 111320.0 * cos(t.lat0 * DEG2RAD);
     if (dx * dx + dy * dy > AUTO_TRACK_M * AUTO_TRACK_M) return;
     ensure_buffers();
     set_line(t.lat0, t.lon0, t.course);
     memcpy(L.gate, t.gate, sizeof(L.gate));
+    L.gates_manual = t.manual;
     L.running = false;          /* ring algab esimesel joone ületamisel */
 }
 

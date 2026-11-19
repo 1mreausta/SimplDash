@@ -37,6 +37,7 @@ typedef struct {
     float    pos_x, pos_y;
     bool     pos_ok;
     lap_gate_t line, gate[LAP_N_SECT - 1];
+    bool     gates_manual;                /* sektorid on käsitsi määratud */
 } lap_info_t;
 
 const lap_info_t *lap_info(void);
@@ -46,3 +47,8 @@ void lap_sample(const dash_state_t *s);
 void lap_mark_line(void);
 /* Nulli ajad ja parim ring (joon jääb) */
 void lap_reset_times(void);
+/* Sektori k (0 = S1 lõpp, 1 = S2 lõpp) piir lähimasse raja punkti (x, y meetrites).
+ * false = raja kuju veel pole või punkt on rajast kaugel (> 60 m). Sektorite ajad nullitakse. */
+bool lap_set_gate(int k, float x, float y);
+/* Sektorid tagasi automaatseks (raja pikkuse kolmandikud) */
+void lap_auto_gates(void);

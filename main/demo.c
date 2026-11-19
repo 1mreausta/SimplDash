@@ -20,13 +20,61 @@ void demo_set_overheat(bool on) { s_hot = on; }
 bool demo_is_overheat(void) { return s_hot; }
 
 /* --- võlts-GPS: auto sõidab ovaalsel rajal, NMEA laused lähevad päris parserisse --- */
-#define TRACK_LS   250.0      /* sirge pikkus (m) */
-#define TRACK_R    70.0       /* kurvi raadius (m) */
-#define TRACK_LAT0 59.3950    /* raja keskpunkt */
+/* Demo-rada: suletud kõver (Catmull-Rom) läbi nende punktide (meetrid: ida, põhi), ~2,3 km.
+ * Pikk stardisirge põhja, kiire parem kurv, juuspööre, šikaan, pikk kaar, teine juuspööre ja S-kurvid. */
+static const float WP[][2] = {
+    { 0, 0 },     { 0, 350 },   { 40, 430 },   { 140, 450 }, { 230, 410 },  { 250, 330 },
+    { 200, 270 }, { 250, 210 }, { 360, 190 },  { 430, 120 }, { 420, 20 },   { 340, -40 },
+    { 250, -20 }, { 200, 60 },  { 130, 40 },   { 90, -60 },  { 40, -110 },  { 0, -80 },
+};
+#define N_WP   ((int)(sizeof(WP) / sizeof(WP[0])))
+#define SUB    40                      /* punkte lõigu kohta */
+#define N_TP   (N_WP * SUB)
+#define TRACK_LAT0 59.3950             /* stardijoone asukoht */
 #define TRACK_LON0 24.6650
+static float s_tx[N_TP + 1], s_ty[N_TP + 1], s_td[N_TP + 1];   /* punktid ja teekond algusest */
 static double s_dist;          /* läbitud teekond rajal (m) */
 static time_t s_gps_t0;
 static float  s_gps_since;
+
+static void track_build(void)
+{
+    if (s_td[N_TP] > 0) return;
+    int n = 0;
+    for (int k = 0; k < N_WP; k++) {
+        const float *p0 = WP[(k - 1 + N_WP) % N_WP], *p1 = WP[k], *p2 = WP[(k + 1) % N_WP], *p3 = WP[(k + 2) % N_WP];
+        for (int i = 0; i < SUB; i++) {
+            float t = (float)i / SUB, t2 = t * t, t3 = t2 * t;
+            for (int c = 0; c < 2; c++) {
+                float v = 0.5f * (2 * p1[c] + (-p0[c] + p2[c]) * t + (2 * p0[c] - 5 * p1[c] + 4 * p2[c] - p3[c]) * t2 +
+                                  (-p0[c] + 3 * p1[c] - 3 * p2[c] + p3[c]) * t3);
+                (c ? s_ty : s_tx)[n] = v;
+            }
+            n++;
+        }
+    }
+    s_tx[N_TP] = s_tx[0];
+    s_ty[N_TP] = s_ty[0];
+    s_td[0] = 0;
+    for (int i = 1; i <= N_TP; i++)
+        s_td[i] = s_td[i - 1] + hypotf(s_tx[i] - s_tx[i - 1], s_ty[i] - s_ty[i - 1]);
+}
+
+/* asukoht (m, ida/põhi) ja sõidusuund raja teekonna järgi; algus = start/finiš */
+static void track_pos(double d, double *x, double *y, double *course)
+{
+    track_build();
+    const double L = s_td[N_TP];
+    d = fmod(d, L);
+    if (d < 0) d += L;
+    int i = 0;
+    while (i < N_TP - 1 && s_td[i + 1] < d) i++;
+    double seg = s_td[i + 1] - s_td[i], f = seg > 0 ? (d - s_td[i]) / seg : 0;
+    double dx = s_tx[i + 1] - s_tx[i], dy = s_ty[i + 1] - s_ty[i];
+    *x = s_tx[i] + f * dx;
+    *y = s_ty[i] + f * dy;
+    *course = fmod(atan2(dx, dy) * 180 / M_PI + 360, 360);
+}
 
 void demo_set_gps(bool on)
 {
@@ -34,11 +82,13 @@ void demo_set_gps(bool on)
     if (on) {
         s_gps_t0 = time(NULL);
         s_gps_since = -1;
-        /* demo: start/finiš joon raja algusesse (parem sirge, sõit põhja) → ringid loetakse ise */
-        lap_set_line(TRACK_LAT0 + (-TRACK_LS / 2) / 110540.0,
-                     TRACK_LON0 + TRACK_R / (111320.0 * cos(TRACK_LAT0 * M_PI / 180)), 0, false);
+        /* demo: start/finiš joon raja algusesse (stardisirge, sõit põhja) → ringid loetakse ise */
+        double x, y, c;
+        track_pos(0, &x, &y, &c);
+        lap_set_line(TRACK_LAT0 + y / 110540.0, TRACK_LON0 + x / (111320.0 * cos(TRACK_LAT0 * M_PI / 180)), (float)c,
+                     false);
         /* ja paar "varasemat" demotulemust, et vaated poleks alguses tühjad */
-        static const float laps[] = { 30.42f, 29.87f, 31.05f };
+        static const float laps[] = { 71.42f, 69.87f, 72.05f };
         static const float accel[] = { 5.06f, 4.97f, 5.12f };
         lap_seed_history(laps, 3);
         accel_seed_history(accel, 3, 2.31f);
@@ -47,33 +97,6 @@ void demo_set_gps(bool on)
     }
 }
 bool demo_is_gps(void) { return s_gps; }
-
-/* asukoht (m, ida/põhi) ja sõidusuund raja teekonna järgi; algus = start/finiš */
-static void track_pos(double d, double *x, double *y, double *course)
-{
-    const double L = 2 * TRACK_LS + 2 * M_PI * TRACK_R;
-    d = fmod(d, L);
-    if (d < TRACK_LS) {                                   /* parem sirge, põhja */
-        *x = TRACK_R; *y = -TRACK_LS / 2 + d; *course = 0;
-        return;
-    }
-    d -= TRACK_LS;
-    if (d < M_PI * TRACK_R) {                             /* ülemine kurv */
-        double a = d / TRACK_R;
-        *x = TRACK_R * cos(a); *y = TRACK_LS / 2 + TRACK_R * sin(a);
-        *course = fmod(360 - a * 180 / M_PI, 360);
-        return;
-    }
-    d -= M_PI * TRACK_R;
-    if (d < TRACK_LS) {                                   /* vasak sirge, lõunasse */
-        *x = -TRACK_R; *y = TRACK_LS / 2 - d; *course = 180;
-        return;
-    }
-    d -= TRACK_LS;
-    double a = M_PI + d / TRACK_R;                        /* alumine kurv */
-    *x = TRACK_R * cos(a); *y = -TRACK_LS / 2 + TRACK_R * sin(a);
-    *course = fmod(360 + 180 - (a - M_PI) * 180 / M_PI, 360);
-}
 
 static void nmea_send(char *body)
 {

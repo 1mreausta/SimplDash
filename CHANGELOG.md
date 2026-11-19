@@ -1,5 +1,11 @@
 # Muudatused
 
+## v0.4.2 – 2026-11-19
+- RADA vaade: nupp **MÄRGI START** (start/finiš joon otse RADA vaatest), raja kuju joonistub esimese ringi ajal GPS-i
+  järgi, sektorid pannakse automaatselt; **SEKTORID** – S1 ja S2 lõpu saab kaardil puudutusega ise määrata,
+  **AUTO** – tagasi automaatseks. Käsitsi sektorid jäetakse koos rajaga meelde.
+- Simulaator: demo-auto sõidab ovaali asemel päris raja moodi ringil (~2,3 km: kurvid, juuspöörded, šikaan).
+
 ## v0.4.1 – 2026-11-19
 - Telefoni veebileht: päises SimplDash logo (uus `docs/logo_web.svg` ilma tausta ja ääreta); logo ja menüü nupud
   on laias aknas samal joonel lehe sisuga.
