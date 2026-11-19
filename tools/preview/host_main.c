@@ -43,7 +43,8 @@ int main(void){
   lv_display_set_flush_cb(d, flush);
   dash_ui_cfg_t cfg = { 0 };
   dash_ui_create(&cfg);
-  run(200); dump("0_nocomm.ppm");
+  run(1600); dump("0_boot.ppm");          /* käivitusekraan */
+  run(1200); dump("0_nocomm.ppm");
 
   /* tavaline sõit */
   v[SIG_RPM]=5890; v[SIG_TPS]=100; v[SIG_MAP]=210; v[SIG_BARO]=101.3f; v[SIG_LAMBDA]=0.80f;

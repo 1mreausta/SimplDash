@@ -81,6 +81,7 @@ typedef struct {
  *   3 TÄNAV   – kaardus astmeline tahhomeeter, suur käik sinises kumas, segmentribad
  *   4 ANDMED  – kõik väärtused koos min/max tippudega
  */
+#define DASH_BOOT_MS       2000  /* käivitusekraan logoga (ms), 0 = kohe dash */
 #define DASH_PAGE_FADE_MS  300   /* vaate vahetuse üleminek (tumeneb + heleneb), 0 = kohe */
 #define DASH_SPEED_MAX  260    /* KELLAD vaate spidomeetri skaala lõpp (km/h) */
 

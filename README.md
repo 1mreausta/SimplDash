@@ -64,6 +64,9 @@ Esimesel korral (uus arvuti või värske `git clone`): paigalda [ESP-IDF 6.1](ht
 `idf.py set-target esp32p4 && idf.py bmgr -b jc1060p470_i_w_y && idf.py build`.
 
 ## Kasutamine
+- **Süüte sisselülitamisel** näidatakse 2 s SimplDashi logo; shift-light'id süttivad järjest (tulede test) ja
+  dash heleneb nähtavale samamoodi nagu vaadete vahetusel (`DASH_BOOT_MS`, 0 = kohe dash).
+  Logo pilt tehakse fondist: `python3 tools/logo/make_boot_logo.py` → `main/boot_logo.c`.
 - **Libista vasakule / paremale** – järgmine / eelmine vaade (RACE → KELLAD → KAAR → TÄNAV → ANDMED).
   Vahetus on sujuv (tumeneb ja heleneb, 0,3 s – `DASH_PAGE_FADE_MS`, 0 = kohe). Vaate nimi näidatakse hetkeks all keskel; viimane vaade jäetakse meelde ka pärast väljalülitamist.
 - **Füüsiline nupp** (valikuline, nt roolil) – järgmine vaade. Nupp GPIO ja GND vahele,
@@ -119,6 +122,7 @@ Joonistab kõik vaated, ka hoiatusega. Kasutab sama UI koodi – muuda disaini j
 | `main/dash_config.h` | **kõik seaded** |
 | `main/fonts/` | Barlow Condensed (SIL OFL litsents) |
 | `docs/logo.svg`, `docs/icon.svg` | logo (sõnamärk) ja ikoon |
+| `main/boot_logo.c`, `tools/logo/` | käivitusekraani logo ja selle generaator |
 
 ## Litsents
 Kood: MIT – vt [LICENSE](LICENSE). Font Barlow Condensed: SIL Open Font License 1.1 ([main/fonts/OFL.txt](main/fonts/OFL.txt)).

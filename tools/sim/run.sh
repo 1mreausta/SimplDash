@@ -19,6 +19,6 @@ if [ ! -f $P/obj/.done ]; then
 fi
 clang -O2 -w -DDASH_HOST -DLV_CONF_INCLUDE_SIMPLE -I$P -I$P/stub -I$L -I$L/src -I$M \
   sim_main.c html.s $P/fontblob.s \
-  $M/dash_ui.c $M/dash_common.c $M/page_*.c $M/maxxecu.c $M/demo.c \
+  $M/dash_ui.c $M/dash_common.c $M/boot_logo.c $M/page_*.c $M/maxxecu.c $M/demo.c \
   $P/obj/*.o -o simpldash_sim
 exec ./simpldash_sim "${1:-8090}"

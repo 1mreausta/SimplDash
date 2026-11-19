@@ -42,7 +42,12 @@ static struct {
     lv_obj_t *fade;          /* must kiht vaadete vahetamise sujuvaks üleminekuks */
     int       fade_target;   /* -1 = üleminekut pole käimas */
     bool      fade_dark;     /* true = vaade on vahetatud, nüüd heledamaks */
+    lv_obj_t *boot, *boot_content, *boot_dots[15];   /* käivitusekraan */
+    int8_t    boot_lit;
+    bool      booting;
 } ui;
+
+extern const lv_image_dsc_t boot_logo;  /* boot_logo.c (tools/logo/make_boot_logo.py) */
 
 /* ---------------------------------------------------------------------- */
 static void show_toast(void)
@@ -110,6 +115,82 @@ static int target_page(void)
     return ui.fade_target >= 0 ? ui.fade_target : ui.page;
 }
 
+/* --- käivitusekraan: logo ilmub (sama üleminek nagu vaadetel), shift-light'id
+ *     süttivad järjest, logo kaob ja dash heleneb nähtavale ------------------------ */
+static void boot_exec(void *obj, int32_t t)
+{
+    (void)obj;
+    const int32_t half = DASH_PAGE_FADE_MS / 2 > 0 ? DASH_PAGE_FADE_MS / 2 : 1;
+    /* sujuv algus ja lõpp (ease in-out), sama kestus nagu vaadete üleminekul */
+    int32_t edge = t < half ? t : (t > DASH_BOOT_MS - half ? DASH_BOOT_MS - t : half);
+    float p = (float)edge / half;
+    p = p < 0 ? 0 : p > 1 ? 1 : p;
+    p = p < 0.5f ? 2 * p * p : 1 - 2 * (1 - p) * (1 - p);
+    int32_t opa = (int32_t)(p * LV_OPA_COVER);
+    lv_obj_set_style_opa(ui.boot_content, (lv_opa_t)opa, 0);
+
+    /* tuled süttivad ühtlaselt; kõik põlevad enne kadumist */
+    int32_t span = DASH_BOOT_MS - 3 * half;
+    int lit = span > 0 ? (int)((t - half) * 15 / span) : 15;
+    lit = lit < 0 ? 0 : lit > 15 ? 15 : lit;
+    for (int i = ui.boot_lit; i < lit; i++) {
+        lv_obj_set_style_bg_color(ui.boot_dots[i], i < 6 ? C_GREEN : i < 11 ? C_YELLOW : C_RED, 0);
+    }
+    if (lit > ui.boot_lit) ui.boot_lit = (int8_t)lit;
+}
+
+static void fade_start(int32_t from, int32_t to);
+
+static void boot_done(lv_anim_t *a)
+{
+    (void)a;
+    lv_obj_delete(ui.boot);
+    ui.boot = NULL;
+    ui.booting = false;
+    /* dash heleneb mustast nähtavale, täpselt nagu vaate vahetusel */
+    if (DASH_PAGE_FADE_MS > 0) {
+        lv_obj_set_style_bg_opa(ui.fade, LV_OPA_COVER, 0);
+        lv_obj_set_hidden(ui.fade, false);
+        ui.fade_target = ui.page;
+        ui.fade_dark = true;
+        fade_start(LV_OPA_COVER, LV_OPA_TRANSP);
+    }
+}
+
+static void boot_create(lv_obj_t *scr)
+{
+    ui.boot = dash_box(scr, 0, 0, W, H, C_BG, 0);
+    ui.boot_content = dash_box(ui.boot, 0, 0, 680, 230, C_BG, 0);
+    lv_obj_set_style_bg_opa(ui.boot_content, LV_OPA_TRANSP, 0);
+    lv_obj_center(ui.boot_content);
+    lv_obj_set_style_opa(ui.boot_content, LV_OPA_TRANSP, 0);
+
+    lv_obj_t *img = lv_image_create(ui.boot_content);
+    lv_image_set_src(img, &boot_logo);
+    lv_obj_align(img, LV_ALIGN_TOP_MID, 0, 20);
+    lv_obj_set_clickable(img, false);
+
+    const int dw = 30, dg = 8, n = 15;
+    int x0 = (680 - (n * dw + (n - 1) * dg)) / 2;
+    for (int i = 0; i < n; i++) {
+        ui.boot_dots[i] = dash_box(ui.boot_content, x0 + i * (dw + dg), 156, dw, 9, C_OFF, 4);
+    }
+    lv_obj_t *sub = dash_label(ui.boot_content, 20, C_DIM, "MaxxECU RACE DASH");
+    lv_obj_align(sub, LV_ALIGN_TOP_MID, 0, 186);
+    ui.boot_lit = 0;
+    ui.booting = true;
+
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_var(&a, ui.boot);
+    lv_anim_set_exec_cb(&a, boot_exec);
+    lv_anim_set_values(&a, 0, DASH_BOOT_MS);
+    lv_anim_set_duration(&a, DASH_BOOT_MS);
+    lv_anim_set_path_cb(&a, lv_anim_path_linear);
+    lv_anim_set_completed_cb(&a, boot_done);
+    lv_anim_start(&a);
+}
+
 void dash_ui_set_page(int page)
 {
     page = ((page % N_PAGES) + N_PAGES) % N_PAGES;
@@ -140,6 +221,7 @@ int dash_ui_page_count(void)
 /* ---------------------------------------------------------------------- */
 static void on_screen_event(lv_event_t *e)
 {
+    if (ui.booting) return;  /* käivitusekraani ajal puudutusi ei arvesta */
     lv_event_code_t c = lv_event_get_code(e);
     lv_indev_t *indev = lv_indev_active();
     lv_point_t pt = { 0, 0 };
@@ -184,7 +266,7 @@ static void ui_tick(lv_timer_t *tm)
     s.rev_limit = ui.rev_limit;
 
     /* nupust tulnud vaatevahetus */
-    int step = __atomic_exchange_n(&ui.pending_step, 0, __ATOMIC_RELAXED);
+    int step = ui.booting ? 0 : __atomic_exchange_n(&ui.pending_step, 0, __ATOMIC_RELAXED);
     if (step) {
         dash_ui_set_page(target_page() + step);
     }
@@ -304,6 +386,8 @@ void dash_ui_create(const dash_ui_cfg_t *cfg)
 
     ui.page = -1;
     open_page(ui.cfg.start_page >= 0 && ui.cfg.start_page < N_PAGES ? ui.cfg.start_page : 0, false);
+
+    if (DASH_BOOT_MS > 0) boot_create(scr);  /* kõige peal */
 
     lv_timer_create(ui_tick, DASH_UI_PERIOD_MS, NULL);
 }
