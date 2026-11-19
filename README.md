@@ -85,7 +85,7 @@ Iga [reliisi](https://github.com/1mreausta/SimplDash/releases) juures on kaks fa
   Flash Address `0x0`, vali fail `simpldash-vX.Y.bin` → Program; või
 - **käsurealt:** `pip install esptool`, siis
   ```bash
-  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.4.bin
+  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.4.1.bin
   ```
 
 > **v0.3 või vanemalt v0.4-le: kindlasti USB kaudu, terve fail aadressile 0x0.** Versioonis 0.4 muutus välkmälu

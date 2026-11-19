@@ -1,5 +1,9 @@
 # Muudatused
 
+## v0.4.1 – 2026-11-19
+- Telefoni veebileht: päises SimplDash logo (uus `docs/logo_web.svg` ilma tausta ja ääreta); logo ja menüü nupud
+  on laias aknas samal joonel lehe sisuga.
+
 ## v0.4 – 2026-11-19
 **NB:** välkmälu jaotus muutus (kaks püsivara pesa) – v0.3-lt uuendades laadi terve `simpldash-v0.4.bin` USB kaudu
 aadressile 0x0 (see lähtestab püsimälu). Edaspidi saab uuendada telefonist (fail `simpldash.bin`), seaded ja läbisõit jäävad alles.
