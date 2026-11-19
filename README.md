@@ -85,7 +85,7 @@ Iga [reliisi](https://github.com/1mreausta/SimplDash/releases) juures on kaks fa
   Flash Address `0x0`, vali fail `simpldash-vX.Y.bin` → Program; või
 - **käsurealt:** `pip install esptool`, siis
   ```bash
-  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.4.2.bin
+  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.4.3.bin
   ```
 
 > **v0.3 või vanemalt v0.4-le: kindlasti USB kaudu, terve fail aadressile 0x0.** Versioonis 0.4 muutus välkmälu
@@ -104,7 +104,8 @@ Muudatuste nimekiri: [CHANGELOG.md](CHANGELOG.md).
 3. **Laadi püsivara** USB kaudu (`simpldash-vX.Y.bin` → 0x0). GPS-i kasutamiseks pead püsivara ise kompileerima
    ja GPS-i pinnid valima (vt [GPS](#gps-valikuline)) – reliisifailis on GPS väljas.
 4. **Süüde sisse:** logo, siis dash. Kui näed „ECU ÜHENDUS PUUDUB“, kontrolli CAN juhtmeid ja MTune'i.
-5. **SEADED → INFO:** kas ECU on „ühendatud“, GPS-il asukoht ja ~10 Hz, SD-kaart „valmis“ / „logib“, Wi-Fi töötab.
+5. **SEADED → INFO / DIAG:** kas ECU on „ühendatud“ (DIAG: „MaxxECU 22/22 kaadrit“), GPS-il asukoht ja ~10 Hz,
+   SD-kaart „valmis“ / „logib“, Wi-Fi töötab. Kui midagi ei tööta, vt [Diagnostika](#diagnostika-seaded--diag).
 6. **Muuda Wi-Fi parool:** telefon → võrk *SimplDash* (parool *simpldash*) → http://192.168.4.1 → Seaded → WI-FI.
 7. **Seadista oma autole** (ekraanil SEADED või telefonis): hoiatuste piirid, õlirõhu kõver, shift-light,
    pihustite suurus ja silindrite arv (kütusekulu), ühikud. Telefonis Ülevaade → määra odomeeter.
@@ -188,7 +189,29 @@ Simulaatoris: nupud **GPS ühendatud** (G) ja **Kiirus: AUTO/ECU/GPS** (S); demo
     pärast; tärniga/„rakendub pärast taaskäivitust“ seaded (ühikud, Wi-Fi) hakkavad kehtima pärast süüte välja-sisse;
   - **SÕIT** – läbisõit, mootoritunnid, reis (km, kütus, keskmine ja hetke kulu, sõiduaeg, paagis); *NULLI REIS*;
   - **HOIATUSED** – hoiatuste logi; *KUSTUTA*;
-  - **INFO** – ECU, GPS (satelliidid, Hz, baud), SD-kaart, Wi-Fi, versioon; *DEMO*; *VAIKESEADED* (2 vajutust 3 s jooksul).
+  - **INFO** – ECU, GPS (satelliidid, Hz, baud), SD-kaart, Wi-Fi, versioon; *DEMO*; *VAIKESEADED* (2 vajutust 3 s jooksul);
+  - **DIAG** – paigalduse diagnostika (vt allpool).
+  SEADED vaates ei kata „ECU ÜHENDUS PUUDUB“ ekraani – seadeid ja diagnostikat saab vaadata ka ilma ECU-ta.
+
+## Diagnostika (SEADED → DIAG)
+Esimesel paigaldusel ja vigade otsimisel. Värskeneb 2 korda sekundis.
+
+- **CAN:** „MaxxECU N/22 kaadrit“ (roheline = kõik tulevad), kaadreid sekundis, bus-off ja kadunud kaadrid;
+  kontrolleri olek ja veaarvurid; tabelis iga CAN ID sagedus (Hz) – MaxxECU 0x520–0x528 peaks olema ~50 Hz,
+  0x530–0x542 ~10 Hz, „–“ = kaader puudub. Ka teised siinil olevad ID-d on näha (nt kohandatud kaadrid).
+- **GPS:** olek, satelliidid, HDOP, Hz, baud, korrektsed/vigased laused ja 5 viimast toorlauset.
+- **SD-kaart:** maht, vaba ruum ja **KIIRUSE TEST** (kirjutab 256 kB): alla ~200 kB/s on 20 Hz logi jaoks aeglane.
+- **Süsteem:** tööaeg, vaba mälu, viimase käivituse põhjus (nt „toitepinge langus“ = toide nõrk või katkendlik).
+
+| Näed | Tõenäoline põhjus |
+|---|---|
+| MaxxECU 0/22, kokku 0 kaadrit, kontroller „aktiivne“ | MTune'is CAN väljund väljas või vale CAN (CAN1/CAN2) |
+| 0/22, kontroller „PASSIIVNE“ / „BUS-OFF“, siini vigu kasvab | CANH/CANL vahetuses, vale bitikiirus (500 kbit/s?), terminaator puudu (mõõda ~60 Ω), GND puudu |
+| osa kaadreid puudub | MTune'is valitud vanem protokolli versioon (vali Default 1.3) |
+| GPS „andmeid ei tule“ | mooduli TX juhe, vale GPIO menuconfigis, toide |
+| GPS lausetel „[VIGA]“ | vale UART kiirus või häiritud juhe |
+| GPS 1 Hz, kuigi soov 10 | mooduli RX juhe puudu või moodul ei tunne seadistuskäske (vt GPS) |
+| kadunud > 0 | dash ei jõua kaadreid töödelda (palju teisi seadmeid siinil) – anna teada |
 
 ## Hoiatused
 - Piirid (`DASH_WARNINGS`) on vaikeväärtused – muuda neid **SEADED** vaates või telefonist. Piir peab olema
@@ -344,6 +367,7 @@ Joonistab kõik vaated, ka hoiatusega. Kasutab sama UI koodi – muuda disaini j
 | `main/stats.c` | läbisõit, mootoritunnid, reis ja kütusekulu |
 | `main/logger.c` | sõidulogi SD-kaardile (CSV) |
 | `main/lap_core.c` | ringiajad, sektorid, vahe parima ringiga, raja kuju |
+| `main/diag.c` | diagnostika (CAN ID-d ja sagedused, CAN vead, GPS toorlaused, süsteem) |
 | `main/can_ecu.c` | ECU nupud (SEADED → ECU) → CAN-kaader MaxxECU-le |
 | `main/wifi_web.c`, `main/web_api.c` | Wi-Fi pääsupunkt, veebileht, püsivara uuendus |
 | `tools/webpage/` | telefoni veebilehe HTML (`gen.py` → `main/web_page.c`) |

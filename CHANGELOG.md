@@ -1,5 +1,11 @@
 # Muudatused
 
+## v0.4.3 – 2026-11-19
+- **Diagnostika** (SEADED → DIAG) paigalduseks ja vigade otsimiseks: CAN-kaadrid ID-de kaupa koos sagedusega
+  (MaxxECU N/22), CAN kontrolleri olek, veaarvurid, bus-off ja kadunud kaadrid; GPS-i olek ja toorlaused;
+  SD-kaardi maht ja kirjutuskiiruse test; vaba mälu ja käivituse põhjus. README-s veaotsingu tabel.
+- SEADED vaates ei kata „ECU ÜHENDUS PUUDUB“ teade enam ekraani.
+
 ## v0.4.2 – 2026-11-19
 - RADA vaade: nupp **MÄRGI START** (start/finiš joon otse RADA vaatest), raja kuju joonistub esimese ringi ajal GPS-i
   järgi, sektorid pannakse automaatselt; **SEKTORID** – S1 ja S2 lõpu saab kaardil puudutusega ise määrata,

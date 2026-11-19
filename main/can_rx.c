@@ -2,10 +2,12 @@
 #include <string.h>
 #include "esp_log.h"
 #include "esp_twai.h"
+#include "esp_timer.h"
 #include "esp_twai_onchip.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
+#include "diag.h"
 #include "maxxecu.h"
 #include "sdkconfig.h"
 
@@ -18,6 +20,7 @@ typedef struct {
 } rx_item_t;
 
 static QueueHandle_t s_queue;
+static volatile uint32_t s_ovf;   /* ISR: järjekord täis */
 static twai_node_handle_t s_node;
 
 /* ISR: loe kaader ja pane järjekorda (ujukomaarvutus käib tavalises taskis) */
@@ -29,7 +32,7 @@ static IRAM_ATTR bool on_rx(twai_node_handle_t h, const twai_rx_done_event_data_
     if (twai_node_receive_from_isr(h, &f) == ESP_OK && !f.header.ide && !f.header.rtr) {
         rx_item_t it = { .id = f.header.id, .dlc = (uint8_t)f.header.dlc };
         memcpy(it.data, buf, 8);
-        xQueueSendFromISR(s_queue, &it, &woken);
+        if (xQueueSendFromISR(s_queue, &it, &woken) != pdTRUE) s_ovf++;
     }
     return woken == pdTRUE;
 }
@@ -49,11 +52,33 @@ static IRAM_ATTR bool on_state(twai_node_handle_t h, const twai_state_change_eve
 static void rx_task(void *arg)
 {
     rx_item_t it;
+    uint32_t ovf_seen = 0;
+    int64_t next_info = 0;
     for (;;) {
-        if (xQueueReceive(s_queue, &it, portMAX_DELAY) != pdTRUE) {
+        bool got = xQueueReceive(s_queue, &it, pdMS_TO_TICKS(500)) == pdTRUE;
+        /* diagnostika: kontrolleri olek ~2 korda sekundis, kadunud kaadrid */
+        int64_t now = esp_timer_get_time();
+        if (now >= next_info) {
+            next_info = now + 500000;
+            twai_node_status_t st;
+            twai_node_record_t rec;
+#if CONFIG_SIMPLDASH_CAN_LISTEN_ONLY
+            const bool lo = true;
+#else
+            const bool lo = false;
+#endif
+            if (twai_node_get_info(s_node, &st, &rec) == ESP_OK)
+                diag_can_state((int)st.state, st.tx_error_count, st.rx_error_count, rec.bus_err_num, lo);
+        }
+        while (ovf_seen != s_ovf) {
+            ovf_seen++;
+            diag_can_overflow();
+        }
+        if (!got) {
             continue;
         }
         if (it.id == 0xFFFFFFFF) {
+            diag_can_busoff();
             ESP_LOGW(TAG, "CAN bus-off, taastan…");
             vTaskDelay(pdMS_TO_TICKS(100));
             twai_node_recover(s_node);
@@ -86,6 +111,7 @@ esp_err_t can_rx_start(void)
     esp_err_t err = twai_new_node_onchip(&cfg, &s_node);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "TWAI init ebaõnnestus: %s", esp_err_to_name(err));
+        diag_can_state(-1, 0, 0, 0, false);
         return err;
     }
 

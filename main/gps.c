@@ -1,4 +1,5 @@
 #include "gps.h"
+#include "diag.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,10 +34,15 @@ static void parse_line(char *line)
     /* kontrollsumma: $....*HH */
     if (line[0] != '$') return;
     char *star = strchr(line, '*');
-    if (!star || hexv(star[1]) < 0 || hexv(star[2]) < 0) return;
+    if (!star || hexv(star[1]) < 0 || hexv(star[2]) < 0) {
+        diag_gps_line(line, false);
+        return;
+    }
     uint8_t sum = 0;
     for (char *p = line + 1; p < star; p++) sum ^= (uint8_t)*p;
-    if (sum != (uint8_t)(hexv(star[1]) * 16 + hexv(star[2]))) return;
+    bool sum_ok = sum == (uint8_t)(hexv(star[1]) * 16 + hexv(star[2]));
+    diag_gps_line(line, sum_ok);
+    if (!sum_ok) return;
     *star = 0;
     s_good++;
 

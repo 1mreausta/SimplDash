@@ -3,6 +3,7 @@
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "dash_config.h"
+#include "diag.h"
 
 typedef enum { T_I16, T_U16, T_U8 } ftype_t;
 
@@ -113,6 +114,7 @@ static bool decode_custom(uint32_t can_id, const uint8_t *d, uint8_t dlc)
 
 bool maxxecu_decode(uint32_t can_id, const uint8_t d[8], uint8_t dlc)
 {
+    diag_can_rx(can_id, dlc);
     bool cust = decode_custom(can_id, d, dlc);
     if (!is_maxx_id(can_id) || dlc < 8) {
         return cust;

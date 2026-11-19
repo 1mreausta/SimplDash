@@ -146,6 +146,54 @@ void logger_start(void)
 #endif
 }
 
+#ifndef DASH_HOST
+#include "esp_vfs_fat.h"
+bool logger_space(uint64_t *total, uint64_t *free_b)
+{
+    if (!lg.card) return false;
+    return esp_vfs_fat_info(lg.root, total, free_b) == ESP_OK;
+}
+static int64_t now_us(void) { return esp_timer_get_time(); }
+#else
+#include <sys/statvfs.h>
+#include <time.h>
+bool logger_space(uint64_t *total, uint64_t *free_b)
+{
+    struct statvfs v;
+    if (!lg.card || statvfs(lg.root, &v) != 0) return false;
+    *total = (uint64_t)v.f_blocks * v.f_frsize;
+    *free_b = (uint64_t)v.f_bavail * v.f_frsize;
+    return true;
+}
+static int64_t now_us(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+}
+#endif
+
+float logger_speed_test(void)
+{
+    if (!lg.card) return -1;
+    char p[128];
+    snprintf(p, sizeof(p), "%s/_speedtest.bin", lg.dir);
+    static char buf[4096];
+    memset(buf, 0x55, sizeof(buf));
+    int64_t t0 = now_us();
+    FILE *f = fopen(p, "wb");
+    if (!f) return -1;
+    bool ok = true;
+    for (int i = 0; i < 64 && ok; i++) ok = fwrite(buf, 1, sizeof(buf), f) == sizeof(buf);
+    fflush(f);
+    fsync(fileno(f));
+    fclose(f);
+    int64_t dt = now_us() - t0;
+    remove(p);
+    if (!ok || dt <= 0) return -1;
+    return 256.0f * 1e6f / (float)dt;
+}
+
 const char *logger_dir(void)
 {
     return lg.card ? lg.dir : NULL;

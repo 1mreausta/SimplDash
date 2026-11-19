@@ -12,6 +12,7 @@
 #include "can_ecu.h"
 #include "dash_common.h"
 #include "demo.h"
+#include "diag.h"
 #include "logger.h"
 #include "settings.h"
 #include "stats.h"
@@ -418,7 +419,8 @@ static void ui_tick(lv_timer_t *tm)
         ui.toast_until_us = 0;
     }
 
-    lv_obj_set_hidden(ui.nocomm, !s.stale);
+    /* SEADED vaates (seaded, diagnostika) ei kata "ECU ühendus puudub" ekraani */
+    lv_obj_set_hidden(ui.nocomm, !s.stale || PAGES[ui.page] == &page_settings);
     lv_obj_set_hidden(ui.demo_badge, !demo_is_enabled() || PAGES[ui.page]->demo_x < 0);
 
     /* hoiatused */
@@ -437,6 +439,7 @@ static void ui_tick(lv_timer_t *tm)
         }
     }
 
+    diag_tick(now);
     stats_update(&s);
     logger_update(&s);
     can_ecu_update(&s);

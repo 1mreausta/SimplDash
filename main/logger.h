@@ -23,5 +23,9 @@ void logger_update(const dash_state_t *s);
 void logger_status(logger_status_t *out);
 /* Logikausta tee (nt "/sdcard/logs"); NULL kui kaarti pole */
 const char *logger_dir(void);
+/* SD-kaardi maht baitides; false = kaarti pole */
+bool logger_space(uint64_t *total, uint64_t *free_b);
+/* Kirjutuskiiruse test (256 kB faili kirjutamine ja kustutamine): kB/s, < 0 = viga */
+float logger_speed_test(void);
 /* Ringi lõpp (RING vaade) – märgitakse logisse */
 void logger_mark_lap(int lap, float time_s);

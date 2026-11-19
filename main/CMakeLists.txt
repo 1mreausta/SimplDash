@@ -3,7 +3,7 @@ idf_component_register(
          "page_race.c" "page_gauges.c" "page_sweep.c" "page_street.c" "page_data.c"
          "gps.c" "page_accel.c" "page_lap.c" "page_classic.c" "needles.c"
          "settings.c" "store.c" "alarms.c" "stats.c" "logger.c" "can_ecu.c" "lap_core.c"
-         "page_track.c" "page_ecu.c" "page_settings.c" "wifi_web.c" "web_api.c" "web_page.c"
+         "page_track.c" "page_ecu.c" "page_settings.c" "wifi_web.c" "web_api.c" "web_page.c" "diag.c"
     INCLUDE_DIRS "."
     EMBED_FILES "fonts/BarlowCondensed-Bold.ttf"
     REQUIRES esp_driver_twai esp_driver_ledc esp_driver_gpio esp_driver_uart esp_timer esp_lcd nvs_flash
