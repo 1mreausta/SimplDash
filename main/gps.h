@@ -21,6 +21,8 @@ typedef struct {
     int64_t  sample_us;     /* esp_timer aeg, millal viimane RMC saabus */
     uint32_t samples;       /* RMC lausete loendur (uus mõõtmine = muutus) */
     int64_t  last_rx_us;
+    float    rate_hz;       /* mõõdetud uuendussagedus (RMC lauseid sekundis) */
+    int      baud;          /* UART kiirus, millel moodul vastab (0 = teadmata / simulaator) */
 } gps_data_t;
 
 #define GPS_TIMEOUT_MS 3000
@@ -31,5 +33,7 @@ void gps_feed(const char *data, size_t len);
 void gps_snapshot(gps_data_t *out);
 /* Unusta kõik (nt simulaatoris GPS lahti ühendatud) */
 void gps_reset(void);
+/* NMEA käsk: "$" + body + "*HH\r\n" (tagastab pikkuse) */
+int gps_make_cmd(const char *body, char *out, size_t cap);
 /* Plaadil: käivita UART (Kconfig SIMPLDASH_GPS_*). Simulaatoris ei tee midagi. */
 void gps_start(void);

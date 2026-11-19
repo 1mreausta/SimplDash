@@ -34,8 +34,8 @@ static struct {
 static lv_color_t seg_color(int i)
 {
     int rpm = (i + 1) * DASH_RPM_MAX / N_SEGS;
-    if (rpm >= DASH_SHIFT_FLASH) return C_RED;
-    if (rpm >= DASH_SHIFT_START) return C_YELLOW;
+    if (rpm >= g_set.shift_flash) return C_RED;
+    if (rpm >= g_set.shift_start) return C_YELLOW;
     return C_GREEN;
 }
 
@@ -129,8 +129,8 @@ static void update(const dash_state_t *s)
     }
 
     /* shift lights */
-    int n = rpm <= DASH_SHIFT_START ? 0
-            : (int)ceilf((rpm - DASH_SHIFT_START) / (DASH_SHIFT_FLASH - DASH_SHIFT_START) * N_LEDS);
+    int n = rpm <= g_set.shift_start ? 0
+            : (int)ceilf((rpm - g_set.shift_start) / (g_set.shift_flash - g_set.shift_start) * N_LEDS);
     for (int i = 0; i < N_LEDS; i++) {
         int8_t st = s->flashing ? (s->blink_fast ? 2 : 0) : (i < n ? 1 : 0);
         if (st != p.led_state[i]) {

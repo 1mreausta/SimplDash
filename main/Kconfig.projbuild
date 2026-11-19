@@ -53,7 +53,8 @@ menu "SimplDash"
         default -1
         range -1 54
         help
-            Valikuline: vajalik ainult mooduli seadistamiseks (nt uuendussagedus).
+            Soovitatav: ilma selleta ei saa dash moodulit 10 Hz peale seadistada
+            (siis jääb mooduli vaikesagedus, tavaliselt 1 Hz). Vt DASH_GPS_RATE_HZ.
 
     config SIMPLDASH_GPS_BAUD
         int "GPS UART kiirus"

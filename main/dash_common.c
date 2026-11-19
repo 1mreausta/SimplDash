@@ -126,9 +126,34 @@ bool dash_sig_alarm(const dash_state_t *s, sig_id_t sig)
     return false;
 }
 
+dash_tile_t dash_units(dash_tile_t c)
+{
+    if (g_set.unit_temp_f && c.unit && !strcmp(c.unit, "°C")) {
+        c.unit = "°F";
+        c.scale *= 1.8f;
+        c.offset = c.offset * 1.8f + 32;
+        c.bar_min = c.bar_min * 1.8f + 32;
+        c.bar_max = c.bar_max * 1.8f + 32;
+    } else if (g_set.unit_press_psi && c.unit && !strcmp(c.unit, "bar")) {
+        const float k = 14.50377f;
+        c.unit = "psi";
+        c.scale *= k;
+        c.offset *= k;
+        c.bar_min *= k;
+        c.bar_max *= k;
+        c.decimals = c.decimals > 1 ? 1 : 0;
+    }
+    return c;
+}
+
+float dash_tile_value(const dash_state_t *s, const dash_tile_t *cfg)
+{
+    return s->d.v[cfg->sig] * cfg->scale + cfg->offset;
+}
+
 void dash_fmt(const dash_state_t *s, const dash_tile_t *cfg, char *buf, size_t cap)
 {
-    if (s->d.valid[cfg->sig]) snprintf(buf, cap, "%.*f", cfg->decimals, s->d.v[cfg->sig] * cfg->scale);
+    if (s->d.valid[cfg->sig]) snprintf(buf, cap, "%.*f", cfg->decimals, dash_tile_value(s, cfg));
     else snprintf(buf, cap, "--");
 }
 
@@ -137,7 +162,8 @@ void dash_tile_create(dash_tile_obj_t *t, const dash_tile_t *cfg, lv_obj_t *pare
                       int x, int y, int w, int h, int val_px)
 {
     memset(t, 0, sizeof(*t));
-    t->cfg = *cfg;
+    t->cfg = dash_units(*cfg);
+    cfg = &t->cfg;
     t->panel = dash_box(parent, x, y, w, h, C_PANEL, 8);
     lv_obj_set_style_border_color(t->panel, C_LINE, 0);
     lv_obj_set_style_border_width(t->panel, 1, 0);
@@ -163,7 +189,7 @@ void dash_tile_update(dash_tile_obj_t *t, const dash_state_t *s)
 {
     char buf[16];
     bool valid = s->d.valid[t->cfg.sig];
-    float v = s->d.v[t->cfg.sig] * t->cfg.scale;
+    float v = dash_tile_value(s, &t->cfg);
     dash_fmt(s, &t->cfg, buf, sizeof(buf));
     dash_set_text_if(t->val, t->last, sizeof(t->last), buf);
     if (t->bar && valid) dash_bar_set(t->bar, v, t->cfg.bar_min, t->cfg.bar_max);
@@ -177,7 +203,7 @@ void dash_tile_update(dash_tile_obj_t *t, const dash_state_t *s)
         t->alarm = al;
         t->cold = -1; /* värvi uuesti */
     }
-    int8_t cold = t->cfg.sig == SIG_CLT && valid && v < 60 && !al;
+    int8_t cold = t->cfg.sig == SIG_CLT && valid && s->d.v[SIG_CLT] < 60 && !al;
     if (cold != t->cold) {
         lv_obj_set_style_text_color(t->val, cold ? C_ACCENT : C_TEXT, 0);
         t->cold = cold;

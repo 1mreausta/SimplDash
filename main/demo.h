@@ -10,6 +10,10 @@ void demo_step(void);
 /* Test: vesi kuumeneb üle (hoiatuse proovimiseks) */
 void demo_set_overheat(bool on);
 bool demo_is_overheat(void);
+/* Test: mootor kloppib (MaxxECU KNOCK lipp 0,3 s iga 2,5 s järel), kuni välja lülitatakse.
+ * Demosõit ise ei kloppi. */
+void demo_set_knock(bool on);
+bool demo_is_knock(void);
 /* Test: võlts-GPS (ovaalne rada, 10 Hz NMEA) – simulaatoris */
 void demo_set_gps(bool on);
 bool demo_is_gps(void);

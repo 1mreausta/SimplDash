@@ -29,3 +29,6 @@ CONFIG_TWAI_ISR_CACHE_SAFE=y
 # TÄNAV vaate ümmargune kuma (radiaalne gradient)
 CONFIG_LV_GRADIENT_MAX_STOPS=4
 CONFIG_LV_USE_DRAW_SW_COMPLEX_GRADIENTS=y
+
+# --- SD-kaart: pikad failinimed (20261119_174512.csv) ---
+CONFIG_FATFS_LFN_HEAP=y

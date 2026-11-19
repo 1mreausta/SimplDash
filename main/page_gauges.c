@@ -175,7 +175,8 @@ static lv_obj_t *centered_label(lv_obj_t *parent, int px, lv_color_t col, int x,
 static void vbar_create(vbar_t *b, const dash_tile_t *cfg, lv_obj_t *parent, int x)
 {
     memset(b, 0, sizeof(*b));
-    b->cfg = *cfg;
+    b->cfg = dash_units(*cfg);
+    cfg = &b->cfg;
     b->alarm = -1;
     lv_obj_t *cap = centered_label(parent, 15, C_DIM, x - 25, 118, 60);
     lv_label_set_text(cap, cfg->label);
@@ -188,7 +189,7 @@ static void vbar_update(vbar_t *b, const dash_state_t *s)
 {
     char buf[16];
     bool valid = s->d.valid[b->cfg.sig];
-    float v = s->d.v[b->cfg.sig] * b->cfg.scale;
+    float v = dash_tile_value(s, &b->cfg);
     if (valid) snprintf(buf, sizeof(buf), "%.*f%s", b->cfg.decimals, v, b->cfg.unit);
     else snprintf(buf, sizeof(buf), "--");
     dash_set_text_if(b->val, b->last, sizeof(b->last), buf);
@@ -236,7 +237,7 @@ static void create(lv_obj_t *scr)
     const int col_x = 432, col_w = 162, row_h = 66, top = 142;
     for (size_t i = 0; i < N_CENTER; i++) {
         row_t *r = &p.rows[i];
-        r->cfg = CENTER[i];
+        r->cfg = dash_units(CENTER[i]);
         r->alarm = -1;
         int y = top + i * (row_h + 6);
         r->lbl = dash_label(scr, 17, C_DIM, r->cfg.label);
@@ -273,7 +274,7 @@ static void update(const dash_state_t *s)
 
     /* tahhomeetri värv: roheline → kollane → punane → vilkuv sinine */
     float rpm = s->rpm;
-    int8_t cid = s->flashing ? (s->blink_fast ? 3 : 2) : rpm >= DASH_SHIFT_START ? 1 : 0;
+    int8_t cid = s->flashing ? (s->blink_fast ? 3 : 2) : rpm >= g_set.shift_start ? 1 : 0;
     static const uint32_t TCOL[] = { 0x00D4FF, 0xFFD21F, 0xFF2D2D, 0x2F7BFF };
     gauge_set(&p.tach, rpm, lv_color_hex(TCOL[cid]), cid);
 

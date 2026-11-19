@@ -4,3 +4,6 @@ dependencies:
   guition/guition_boards: "==0.2.4"
   espressif/esp_lvgl_port: "^2.9.0"
   lvgl/lvgl: "^9.3.0"
+  # Wi-Fi plaadi ESP32-C6 kaudu (SDIO)
+  espressif/esp_wifi_remote: ">=1.0.0"
+  espressif/esp_hosted: ">=2.0.0"

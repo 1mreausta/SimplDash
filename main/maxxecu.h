@@ -38,6 +38,8 @@ typedef enum {
     /* Tuletatud (arvutatakse dekoodris) */
     SIG_AFR,        /* lambda * stöhh. suhe */
     SIG_BOOST_BAR,  /* (MAP - baro) / 100 */
+    /* Kohandatud CAN-kanalid (DASH_CUSTOM_CAN, dash_config.h) */
+    SIG_CUST1, SIG_CUST2, SIG_CUST3, SIG_CUST4, SIG_CUST5, SIG_CUST6, SIG_CUST7, SIG_CUST8,
     SIG_COUNT
 } sig_id_t;
 

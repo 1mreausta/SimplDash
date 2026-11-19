@@ -8,18 +8,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "alarms.h"
+#include "can_ecu.h"
 #include "dash_common.h"
 #include "demo.h"
+#include "logger.h"
+#include "settings.h"
+#include "stats.h"
 #include "esp_timer.h"
 #include "version.h"
 
 static const dash_page_t *const PAGES[] = { &page_race, &page_gauges, &page_sweep, &page_street,
-                                             &page_classic, &page_accel, &page_lap, &page_data };
+                                             &page_classic, &page_accel, &page_lap, &page_track,
+                                             &page_data, &page_settings };
 #define N_PAGES ((int)(sizeof(PAGES) / sizeof(PAGES[0])))
-
-static const dash_warning_t WARN[] = DASH_WARNINGS;
-#define N_WARN (sizeof(WARN) / sizeof(WARN[0]))
-_Static_assert(N_WARN <= DASH_MAX_WARN, "liiga palju hoiatusi (DASH_MAX_WARN)");
+_Static_assert(N_PAGES <= 16, "vaadete peitmise bitimask on 16-bitine");
 
 static const uint8_t BRIGHT[] = DASH_BRIGHTNESS_LEVELS;
 
@@ -35,6 +38,9 @@ static struct {
     lv_obj_t *warn_box, *warn_lbl, *alarm_frame;
     char      warn_txt[96];
     lv_obj_t *nocomm, *demo_badge;
+    lv_obj_t *alert, *alert_lbl;     /* täisekraani hoiatus */
+    char      alert_txt[48];
+    int8_t    alert_col;
     lv_obj_t *toast, *toast_lbl, *toast_dots[N_PAGES];
     int64_t   toast_until_us;
     int       bright_idx;
@@ -48,7 +54,6 @@ static struct {
     int8_t    boot_lit;
     bool      booting;
     /* GPS */
-    int       speed_src;
     lv_obj_t *gps_box, *gps_lbl, *clock_lbl;
     char      gps_txt[16], clock_txt[8];
     int8_t    gps_col;
@@ -207,6 +212,12 @@ static void boot_create(lv_obj_t *scr)
     lv_anim_start(&a);
 }
 
+void dash_ui_show_boot(void)
+{
+    if (ui.booting || DASH_BOOT_MS <= 0) return;
+    boot_create(lv_screen_active());
+}
+
 void dash_ui_set_page(int page)
 {
     page = ((page % N_PAGES) + N_PAGES) % N_PAGES;
@@ -254,13 +265,16 @@ static void page_step(int steps)
 
 void dash_ui_set_speed_source(int src)
 {
-    ui.speed_src = src;
+    g_set.speed_src = (int8_t)src;
+    settings_changed();
 }
 
 int dash_ui_get_speed_source(void)
 {
-    return ui.speed_src;
+    return g_set.speed_src;
 }
+
+bool dash_ui_local_time(const gps_data_t *g, int *hh, int *mm);
 
 /* --- kell: GPS UTC → kohalik aeg (EL suveaeg) ----------------------------- */
 static int64_t days_from_civil(int y, int m, int d)
@@ -280,12 +294,12 @@ static int64_t last_sunday_utc(int y, int m)   /* kuu viimane pühapäev 01:00 U
     return (d - wd) * 86400 + 3600;
 }
 
-static bool local_clock(const gps_data_t *g, int *hh, int *mm)
+bool dash_ui_local_time(const gps_data_t *g, int *hh, int *mm)
 {
     if (!g->time_valid) return false;
     int64_t t = days_from_civil(g->year, g->month, g->day) * 86400 + g->hour * 3600 + g->min * 60 + (int)g->sec;
-    int64_t off = (int64_t)DASH_TZ_OFFSET_MIN * 60;
-    if (DASH_TZ_EU_DST && t >= last_sunday_utc(g->year, 3) && t < last_sunday_utc(g->year, 10)) off += 3600;
+    int64_t off = (int64_t)g_set.tz_offset_min * 60;
+    if (g_set.tz_dst && t >= last_sunday_utc(g->year, 3) && t < last_sunday_utc(g->year, 10)) off += 3600;
     t += off;
     int64_t sod = ((t % 86400) + 86400) % 86400;
     *hh = (int)(sod / 3600);
@@ -298,6 +312,9 @@ static void on_screen_event(lv_event_t *e)
 {
     if (ui.booting) return;  /* käivitusekraani ajal puudutusi ei arvesta */
     lv_event_code_t c = lv_event_get_code(e);
+    /* puudutus (heledus) ja pikk vajutus (demo) ainult tühjal taustal – mitte nuppudel/loenditel;
+     * libistamine töötab kõikjal (loendid annavad sündmuse edasi) */
+    bool on_bg = lv_event_get_target_obj(e) == lv_event_get_current_target_obj(e);
     lv_indev_t *indev = lv_indev_active();
     lv_point_t pt = { 0, 0 };
     if (indev) lv_indev_get_point(indev, &pt);
@@ -313,6 +330,8 @@ static void on_screen_event(lv_event_t *e)
             page_step(dx < 0 ? 1 : -1);
         } else if (abs(dx) > TAP_MAX_PX || abs(dy) > TAP_MAX_PX) {
             /* pooleli jäänud libistus – ei tee midagi */
+        } else if (!on_bg) {
+            /* nupp / loend – ei midagi */
         } else if (ms >= 2500) {
             /* pikk vajutus: demorežiim sisse/välja */
             demo_set_enabled(!demo_is_enabled());
@@ -322,6 +341,13 @@ static void on_screen_event(lv_event_t *e)
             ui.cfg.on_brightness(BRIGHT[ui.bright_idx]);
         }
     }
+}
+
+static dash_state_t s_state;
+
+const struct dash_state_s *dash_ui_state(void)
+{
+    return &s_state;
 }
 
 static void ui_tick(lv_timer_t *tm)
@@ -334,7 +360,7 @@ static void ui_tick(lv_timer_t *tm)
     s.blink = (now / 250000) % 2;
     s.blink_fast = (now / 80000) % 2;
     s.rpm = s.d.valid[SIG_RPM] ? s.d.v[SIG_RPM] : 0;
-    s.flashing = s.rpm >= DASH_SHIFT_FLASH;
+    s.flashing = s.rpm >= g_set.shift_flash;
     if (s.d.valid[SIG_REVLIMIT_RPM] && s.d.v[SIG_REVLIMIT_RPM] > 1000) {
         ui.rev_limit = (int)s.d.v[SIG_REVLIMIT_RPM];
     }
@@ -345,13 +371,16 @@ static void ui_tick(lv_timer_t *tm)
     gps_snapshot(&s.gps);
     s.gps_ok = s.gps.connected;
     if (s.gps_ok) ui.gps_seen = true;
-    s.speed_src = ui.speed_src;
-    s.speed_gps = ui.speed_src == DASH_SPEED_GPS || (ui.speed_src == DASH_SPEED_AUTO && s.gps.fix);
+    s.speed_src = g_set.speed_src;
+    s.speed_gps = s.speed_src == DASH_SPEED_GPS || (s.speed_src == DASH_SPEED_AUTO && s.gps.fix);
     if (s.speed_gps) {
         s.d.v[SIG_SPEED] = s.gps.fix && s.gps.speed_kmh >= DASH_GPS_MIN_KMH ? s.gps.speed_kmh : 0;
         s.d.valid[SIG_SPEED] = s.gps.fix;
     }
-    for (int i = 0; i < N_PAGES; i++) ui.avail[i] = !PAGES[i]->available || PAGES[i]->available(&s);
+    for (int i = 0; i < N_PAGES; i++) {
+        ui.avail[i] = (!PAGES[i]->available || PAGES[i]->available(&s)) &&
+                      (!((g_set.pages_off >> i) & 1) || PAGES[i] == &page_settings);   /* SEADED ei peitu */
+    }
     /* GPS-vaade, aga GPS kadus (või ei tulnud 15 s jooksul pärast käivitust) → esimene vaade */
     if (!ui.booting && !ui.avail[target_page()] &&
         (ui.gps_seen || now - ui.start_us > 15000000)) {
@@ -374,7 +403,7 @@ static void ui_tick(lv_timer_t *tm)
             ui.gps_col = col;
         }
         int hh, mm;
-        if (local_clock(&s.gps, &hh, &mm)) {
+        if (dash_ui_local_time(&s.gps, &hh, &mm)) {
             char c[8];
             snprintf(c, sizeof(c), "%02d:%02d", hh, mm);
             dash_set_text_if(ui.clock_lbl, ui.clock_txt, sizeof(ui.clock_txt), c);
@@ -393,37 +422,51 @@ static void ui_tick(lv_timer_t *tm)
     lv_obj_set_hidden(ui.demo_badge, !demo_is_enabled() || PAGES[ui.page]->demo_x < 0);
 
     /* hoiatused */
-    char wtxt[96] = "";
-    int nw = 0;
-    for (size_t i = 0; i < N_WARN; i++) {
-        const dash_warning_t *w = &WARN[i];
-        s.warn[i] = false;
-        if (s.stale || !s.d.valid[w->sig] || (w->min_rpm > 0 && s.rpm < w->min_rpm)) continue;
-        float v = s.d.v[w->sig];
-        if ((!isnan(w->high) && v > w->high) || (!isnan(w->low) && v < w->low)) {
-            s.warn[i] = true;
-            size_t len = strlen(wtxt);
-            snprintf(wtxt + len, sizeof(wtxt) - len, "%s%s", nw ? "  ·  " : "", w->label);
-            nw++;
+    alarms_eval(&s);
+    if (s.n_warn) dash_set_text_if(ui.warn_lbl, ui.warn_txt, sizeof(ui.warn_txt), s.warn_txt);
+    lv_obj_set_hidden(ui.warn_box, !(s.n_warn && s.blink));
+    lv_obj_set_hidden(ui.alarm_frame, !(s.n_warn && s.blink));
+    /* täisekraani hoiatus: vilgub punane / tumepunane, puudutus = kinnita (60 s vaikust) */
+    lv_obj_set_hidden(ui.alert, !s.alert_full || ui.booting);
+    if (s.alert_full) {
+        dash_set_text_if(ui.alert_lbl, ui.alert_txt, sizeof(ui.alert_txt), s.alert_txt);
+        int8_t col = s.blink;
+        if (col != ui.alert_col) {
+            lv_obj_set_style_bg_color(ui.alert, col ? C_RED : lv_color_hex(0x5A0000), 0);
+            ui.alert_col = col;
         }
     }
-    if (nw) dash_set_text_if(ui.warn_lbl, ui.warn_txt, sizeof(ui.warn_txt), wtxt);
-    lv_obj_set_hidden(ui.warn_box, !(nw && s.blink));
-    lv_obj_set_hidden(ui.alarm_frame, !(nw && s.blink));
+
+    stats_update(&s);
+    logger_update(&s);
+    can_ecu_update(&s);
+    settings_tick(now);
 
     for (int i = 0; i < N_PAGES; i++) {
         if (PAGES[i]->background) PAGES[i]->background(&s);
     }
     PAGES[ui.page]->update(&s);
+    s_state = s;   /* veebilehe jaoks (loetakse LVGL lukuga) */
 }
 
 /* ---------------------------------------------------------------------- */
+static void on_alert(lv_event_t *e)
+{
+    (void)e;
+    alarms_ack();
+}
+
 void dash_ui_create(const dash_ui_cfg_t *cfg)
 {
     memset(&ui, 0, sizeof(ui));
+    static const char *names[N_PAGES];
+    for (int i = 0; i < N_PAGES; i++) names[i] = PAGES[i]->name;
+    settings_set_pages(names, N_PAGES);
+    settings_init();
+    stats_init();
+    alarms_init();
     if (cfg) ui.cfg = *cfg;
     ui.rev_limit = DASH_RPM_MAX - 500;
-    ui.speed_src = DASH_SPEED_SOURCE;
     ui.start_us = esp_timer_get_time();
     ui.gps_col = -1;
     for (int i = 0; i < N_PAGES; i++) ui.avail[i] = !PAGES[i]->available;
@@ -439,6 +482,7 @@ void dash_ui_create(const dash_ui_cfg_t *cfg)
     for (int i = 0; i < N_PAGES; i++) {
         lv_obj_t *o = dash_box(scr, 0, 0, W, H, C_BG, 0);
         lv_obj_set_style_bg_opa(o, LV_OPA_TRANSP, 0);
+        lv_obj_set_event_bubble(o, true);   /* nuppudelt/loenditelt libistamine jõuab ekraanini */
         PAGES[i]->create(o);
         lv_obj_set_hidden(o, true);
         ui.page_obj[i] = o;
@@ -480,6 +524,19 @@ void dash_ui_create(const dash_ui_cfg_t *cfg)
     lv_obj_set_hidden(ui.gps_box, true);
     ui.clock_lbl = dash_label(scr, 26, C_TEXT, "--:--");
     lv_obj_set_hidden(ui.clock_lbl, true);
+
+    /* Täisekraani hoiatus (puudutus = kinnita) */
+    ui.alert = dash_box(scr, 40, 60, W - 80, H - 120, C_RED, 24);
+    lv_obj_set_style_border_color(ui.alert, C_TEXT, 0);
+    lv_obj_set_style_border_width(ui.alert, 6, 0);
+    lv_obj_set_clickable(ui.alert, true);
+    lv_obj_add_event_cb(ui.alert, on_alert, LV_EVENT_CLICKED, NULL);
+    ui.alert_lbl = dash_label(ui.alert, 120, C_TEXT, "");
+    lv_obj_align(ui.alert_lbl, LV_ALIGN_CENTER, 0, -30);
+    lv_obj_t *al2 = dash_label(ui.alert, 26, C_TEXT, "puuduta = kinnita (60 s)");
+    lv_obj_align(al2, LV_ALIGN_BOTTOM_MID, 0, -24);
+    lv_obj_set_hidden(ui.alert, true);
+    ui.alert_col = -1;
 
     /* Ühendus puudub */
     ui.nocomm = dash_box(scr, 0, 0, W, H, C_BG, 0);

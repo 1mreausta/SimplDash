@@ -77,6 +77,8 @@ EMSCRIPTEN_KEEPALIVE void sim_key(int k)
     case 3: demo_set_enabled(!demo_is_enabled()); break;
     case 4: s_can = !s_can; break;
     case 5: demo_set_overheat(!demo_is_overheat()); break;
+    case 8: demo_set_knock(!demo_is_knock()); break;
+    case 9: dash_ui_show_boot(); break;
     case 6: dash_ui_set_speed_source((dash_ui_get_speed_source() + 1) % 3); break;
     case 7: demo_set_gps(!demo_is_gps()); break;
     }
@@ -86,7 +88,7 @@ EMSCRIPTEN_KEEPALIVE void sim_key(int k)
 EMSCRIPTEN_KEEPALIVE int sim_state(void)
 {
     return demo_is_enabled() | (s_can << 1) | (demo_is_overheat() << 2) | (demo_is_gps() << 3) | (s_page << 4) |
-           (s_bright << 8) | (dash_ui_get_speed_source() << 16);
+           (s_bright << 8) | (dash_ui_get_speed_source() << 16) | (demo_is_knock() << 18);
 }
 
 EMSCRIPTEN_KEEPALIVE uint16_t *sim_fb(void) { return s_fb; }

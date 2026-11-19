@@ -127,12 +127,18 @@ static float speed = 0, clt = 40, oil_t = 35, tank = 45, t = 0, idle_since = 0, 
 static int gear = 1, phase = 0; /* 0 kiirendus, 1 pidurdus, 2 tühikäik */
 static int tick = 0;
 
+static volatile bool s_knock;
+static float s_knock_next;
+void demo_set_knock(bool on) { s_knock = on; s_knock_next = 0; }
+bool demo_is_knock(void) { return s_knock; }
+
 /* Üks 20 ms samm: arvuta mudel ja saada kaadrid dekoodrisse nagu päris ECU */
 void demo_step(void)
 {
     const float dt = 0.02f;
     {
         t += dt;
+        if (s_knock && t >= s_knock_next) { knock_until = t + 0.3f; s_knock_next = t + 2.5f; }
         bool shiftcut = false;
         float tps, rpm;
 
@@ -162,7 +168,6 @@ void demo_step(void)
         else clt += (clt_norm - clt) * 0.02f * dt;
         oil_t += ((105 + 15 * load) - oil_t) * 0.01f * dt;
         tank = fmaxf(0, tank - load * 0.004f * dt);
-        if (load > 0.9f && rpm > 6500 && esp_random() % 500 == 0) { knock_until = t + 0.3f; }
         float lam_t = load > 0.6f ? 0.80f : 1.0f;
         float egt = 380 + load * 380 + rpm / 40;
 

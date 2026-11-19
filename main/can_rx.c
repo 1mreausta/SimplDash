@@ -78,7 +78,7 @@ esp_err_t can_rx_start(void)
             .bus_off_indicator = GPIO_NUM_NC,
         },
         .bit_timing.bitrate = CONFIG_SIMPLDASH_CAN_BITRATE,
-        .tx_queue_depth = 1,
+        .tx_queue_depth = 4,
 #if CONFIG_SIMPLDASH_CAN_LISTEN_ONLY
         .flags.enable_listen_only = 1,
 #endif
@@ -102,4 +102,20 @@ esp_err_t can_rx_start(void)
              "");
 #endif
     return ESP_OK;
+}
+
+bool can_send(uint32_t id, const uint8_t *data, uint8_t len)
+{
+#if CONFIG_SIMPLDASH_CAN_LISTEN_ONLY
+    (void)id; (void)data; (void)len;
+    return false;
+#else
+    if (!s_node || len > 8) return false;
+    static uint8_t buf[4][8];          /* kaadri andmed peavad püsima kuni saatmiseni */
+    static int slot;
+    slot = (slot + 1) % 4;
+    memcpy(buf[slot], data, len);
+    twai_frame_t f = { .header = { .id = id, .dlc = len }, .buffer = buf[slot], .buffer_len = len };
+    return twai_node_transmit(s_node, &f, 0) == ESP_OK;
+#endif
 }

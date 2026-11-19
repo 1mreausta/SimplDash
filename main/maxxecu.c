@@ -81,10 +81,41 @@ static inline bool is_maxx_id(uint32_t id)
            (id >= 0x540 && id <= 0x542);
 }
 
+/* --- kohandatud kanalid --- */
+static const dash_can_ch_t CUST[] = DASH_CUSTOM_CAN;
+#define N_CUST ((int)(sizeof(CUST) / sizeof(CUST[0])))
+_Static_assert(sizeof(CUST) / sizeof(CUST[0]) <= 8, "kuni 8 kohandatud CAN-kanalit");
+
+static bool decode_custom(uint32_t can_id, const uint8_t *d, uint8_t dlc)
+{
+    bool hit = false;
+    for (int i = 0; i < N_CUST; i++) {
+        const dash_can_ch_t *c = &CUST[i];
+        if (!c->id || c->id != can_id) continue;
+        int len = c->type >= CAN_U16 ? 2 : 1;
+        if (c->byte + len > dlc) continue;
+        float raw;
+        if (len == 1) {
+            raw = c->type == CAN_S8 ? (float)(int8_t)d[c->byte] : (float)d[c->byte];
+        } else {
+            uint16_t u = c->big_endian ? (uint16_t)(d[c->byte] << 8 | d[c->byte + 1])
+                                       : (uint16_t)(d[c->byte] | d[c->byte + 1] << 8);
+            raw = c->type == CAN_S16 ? (float)(int16_t)u : (float)u;
+        }
+        portENTER_CRITICAL(&s_lock);
+        s_data.v[SIG_CUST1 + i] = raw * c->mul + c->add;
+        s_data.valid[SIG_CUST1 + i] = true;
+        portEXIT_CRITICAL(&s_lock);
+        hit = true;
+    }
+    return hit;
+}
+
 bool maxxecu_decode(uint32_t can_id, const uint8_t d[8], uint8_t dlc)
 {
+    bool cust = decode_custom(can_id, d, dlc);
     if (!is_maxx_id(can_id) || dlc < 8) {
-        return false;
+        return cust;
     }
     /* Ühes kaadris on kuni 5 välja (0x540) */
     float vals[8];

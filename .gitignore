@@ -20,3 +20,4 @@ tools/sim/simpldash_sim
 tools/web/obj/
 tools/web/dist/
 tools/sim/index.gen.html
+tools/sim/data/

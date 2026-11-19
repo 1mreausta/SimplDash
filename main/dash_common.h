@@ -9,6 +9,7 @@
 #include "dash_config.h"
 #include "gps.h"
 #include "maxxecu.h"
+#include "settings.h"
 
 #define W 1024
 #define H 600
@@ -28,10 +29,10 @@
 #define C_ACCENT  lv_color_hex(0x00D4FF)
 #define C_LIMIT   lv_color_hex(0x3A0B0B)
 
-#define DASH_MAX_WARN 16
+#define DASH_MAX_WARN 16   /* = SET_MAX_WARN (settings.h) */
 
 /* Ühe UI-kaadri olek – arvutatakse kord ja antakse aktiivsele vaatele */
-typedef struct {
+typedef struct dash_state_s {
     ecu_data_t d;
     bool  stale;        /* ECU vaikib */
     bool  blink;        /* 2 Hz */
@@ -40,6 +41,10 @@ typedef struct {
     float rpm;
     int   rev_limit;
     bool  warn[DASH_MAX_WARN];
+    int   n_warn;            /* aktiivseid hoiatusi (ka ECU olek) */
+    char  warn_txt[96];      /* hoiatusriba tekst */
+    bool  alert_full;        /* täisekraani hoiatus */
+    char  alert_txt[48];
     gps_data_t gps;     /* GPS olek */
     bool  gps_ok;       /* GPS on ühendatud (NMEA saabub) */
     bool  speed_gps;    /* d.v[SIG_SPEED] tuleb praegu GPS-ist */
@@ -61,7 +66,10 @@ typedef struct {
 } dash_page_t;
 
 extern const dash_page_t page_race, page_gauges, page_sweep, page_street, page_data,
-                         page_accel, page_lap, page_classic;
+                         page_accel, page_lap, page_classic, page_track, page_settings;
+/* ECU nuppude paneel (SEADED vaate vahekaart, page_ecu.c) */
+void ecu_panel_create(lv_obj_t *parent);
+void ecu_panel_update(const dash_state_t *s);
 
 /* Kas GPS on ühendatud (vaadete "available" jaoks) */
 bool dash_need_gps(const dash_state_t *s);
@@ -86,6 +94,10 @@ void dash_bar_set(lv_obj_t *bar, float v, float lo, float hi);
 void dash_gear_text(const dash_state_t *s, char *buf, size_t cap);
 /* Kas mõni aktiivne hoiatus käib selle signaali kohta */
 bool dash_sig_alarm(const dash_state_t *s, sig_id_t sig);
+/* Ühikute teisendus seadete järgi (°C → °F, bar → psi); kutsu näidiku loomisel */
+dash_tile_t dash_units(dash_tile_t c);
+/* Näidiku väärtus kuvatavates ühikutes (v × scale + offset) */
+float dash_tile_value(const dash_state_t *s, const dash_tile_t *cfg);
 /* Väärtus tekstina ("--" kui pole) */
 void dash_fmt(const dash_state_t *s, const dash_tile_t *cfg, char *buf, size_t cap);
 

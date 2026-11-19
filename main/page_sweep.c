@@ -171,7 +171,7 @@ static void update(const dash_state_t *s)
         lv_arc_set_value(p.arc, pm);
         p.last = pm;
     }
-    int8_t cid = s->flashing ? (s->blink_fast ? 3 : 2) : rpm >= DASH_SHIFT_START ? 1 : 0;
+    int8_t cid = s->flashing ? (s->blink_fast ? 3 : 2) : rpm >= g_set.shift_start ? 1 : 0;
     if (cid != p.col) {
         static const uint32_t COL[] = { 0x00D4FF, 0xFFD21F, 0xFF2D2D, 0x2F7BFF };
         lv_obj_set_style_arc_color(p.arc, lv_color_hex(COL[cid]), LV_PART_INDICATOR);

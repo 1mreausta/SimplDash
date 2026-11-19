@@ -1,4 +1,5 @@
 #include "gps.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "esp_timer.h"
@@ -8,6 +9,9 @@ static gps_data_t s_gps;
 static portMUX_TYPE s_lock = portMUX_INITIALIZER_UNLOCKED;
 static char s_line[128];
 static size_t s_len;
+static int64_t s_rate_t0;
+static int s_rate_n;
+static uint32_t s_good;   /* korrektse kontrollsummaga lauseid kokku (kiiruse tuvastus) */
 
 static int hexv(char c)
 {
@@ -34,6 +38,7 @@ static void parse_line(char *line)
     for (char *p = line + 1; p < star; p++) sum ^= (uint8_t)*p;
     if (sum != (uint8_t)(hexv(star[1]) * 16 + hexv(star[2]))) return;
     *star = 0;
+    s_good++;
 
     char *f[20];
     int n = 0;
@@ -70,6 +75,14 @@ static void parse_line(char *line)
         }
         s_gps.sample_us = now;
         s_gps.samples++;
+        /* uuendussagedus: RMC lauseid viimase ~1 s jooksul */
+        if (!s_rate_t0) s_rate_t0 = now;
+        s_rate_n++;
+        if (now - s_rate_t0 >= 1000000) {
+            s_gps.rate_hz = s_rate_n * 1e6f / (float)(now - s_rate_t0);
+            s_rate_t0 = now;
+            s_rate_n = 0;
+        }
         s_gps.last_rx_us = now;
         portEXIT_CRITICAL(&s_lock);
     } else if (!strcmp(type, "GGA") && n >= 9) {
@@ -112,7 +125,10 @@ void gps_snapshot(gps_data_t *out)
     portEXIT_CRITICAL(&s_lock);
     out->connected = out->last_rx_us != 0 &&
                      (esp_timer_get_time() - out->last_rx_us) < (int64_t)GPS_TIMEOUT_MS * 1000;
-    if (!out->connected) out->fix = false;
+    if (!out->connected) {
+        out->fix = false;
+        out->rate_hz = 0;
+    }
 }
 
 void gps_reset(void)
@@ -121,25 +137,125 @@ void gps_reset(void)
     memset(&s_gps, 0, sizeof(s_gps));
     portEXIT_CRITICAL(&s_lock);
     s_len = 0;
+    s_rate_t0 = 0;
+    s_rate_n = 0;
+}
+
+/* NMEA käsk kontrollsummaga: body ilma $ ja *HH-ta */
+int gps_make_cmd(const char *body, char *out, size_t cap)
+{
+    uint8_t sum = 0;
+    for (const char *c = body; *c; c++) sum ^= (uint8_t)*c;
+    return snprintf(out, cap, "$%s*%02X\r\n", body, sum);
 }
 
 /* --- plaadi UART ------------------------------------------------------------ */
 #ifndef DASH_HOST
+#include "dash_config.h"
 #include "driver/uart.h"
 #include "esp_log.h"
 #include "freertos/task.h"
 #include "sdkconfig.h"
 
 #define GPS_UART UART_NUM_2
+static const char *TAG = "gps";
 
 #if CONFIG_SIMPLDASH_GPS_RX_GPIO >= 0
+static uint8_t s_buf[512];
+
+/* loe ms millisekundit ja tagasta, mitu korrektset NMEA lauset tuli */
+static uint32_t listen(int ms)
+{
+    uint32_t g0 = s_good;
+    int64_t end = esp_timer_get_time() + (int64_t)ms * 1000;
+    while (esp_timer_get_time() < end) {
+        int n = uart_read_bytes(GPS_UART, s_buf, sizeof(s_buf), pdMS_TO_TICKS(50));
+        if (n > 0) gps_feed((const char *)s_buf, (size_t)n);
+    }
+    return s_good - g0;
+}
+
+static void set_baud(int baud)
+{
+    uart_wait_tx_done(GPS_UART, pdMS_TO_TICKS(200));
+    uart_set_baudrate(GPS_UART, baud);
+    uart_flush_input(GPS_UART);
+    s_len = 0;
+}
+
+#if CONFIG_SIMPLDASH_GPS_TX_GPIO >= 0
+static void send(const char *body)
+{
+    char line[96];
+    int n = gps_make_cmd(body, line, sizeof(line));
+    uart_write_bytes(GPS_UART, line, n);
+    uart_wait_tx_done(GPS_UART, pdMS_TO_TICKS(200));
+    vTaskDelay(pdMS_TO_TICKS(60));
+}
+
+/*
+ * Mooduli seadistus. Mooduli kiipi (ja käsustikku) ei pruugi teada, seega saadetakse levinumate
+ * GNSS-kiipide käsud: CASIC/AT6558 ($PCAS), MediaTek ($PMTK), Goke ($PGKC), Airoha ($PAIR).
+ * Moodul eirab käske, mida ta ei tunne. Tulemust näeb SEADED vaates (mõõdetud Hz ja baud).
+ */
+static int configure(int baud)
+{
+    /* 1) kiirem UART (10 Hz × kõik laused ei mahu 38400 baudi sisse) */
+    const int fast = DASH_GPS_FAST_BAUD;
+    if (fast > baud) {
+        char b[48];
+        int code = fast == 115200 ? 5 : fast == 57600 ? 4 : fast == 230400 ? 6 : fast == 460800 ? 7 : 3;
+        snprintf(b, sizeof(b), "PCAS01,%d", code);              send(b);
+        snprintf(b, sizeof(b), "PGKC147,%d", fast);              send(b);
+        snprintf(b, sizeof(b), "PMTK251,%d", fast);              send(b);
+        snprintf(b, sizeof(b), "PAIR864,0,0,%d", fast);          send(b);
+        set_baud(fast);
+        if (listen(1500) >= 3) {
+            baud = fast;
+        } else {
+            ESP_LOGW(TAG, "moodul ei läinud %d baudile – jään %d peale", fast, baud);
+            set_baud(baud);
+            listen(500);
+        }
+    }
+    /* 2) ainult RMC + GGA (vähem andmeid, kiirem uuendus) */
+    send("PCAS03,1,0,0,0,1,0,0,0,0,0,,,0,0,,,,0");
+    send("PMTK314,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0");
+    /* 3) uuendussagedus */
+    char b[32];
+    const int ms = 1000 / DASH_GPS_RATE_HZ;
+    snprintf(b, sizeof(b), "PCAS02,%d", ms);   send(b);
+    snprintf(b, sizeof(b), "PGKC101,%d", ms);  send(b);
+    snprintf(b, sizeof(b), "PMTK220,%d", ms);  send(b);
+    snprintf(b, sizeof(b), "PAIR050,%d", ms);  send(b);
+    return baud;
+}
+#endif
+
 static void gps_task(void *arg)
 {
     (void)arg;
-    static uint8_t buf[256];
+    /* kiiruse tuvastus: seadistatud kiirus, siis levinumad */
+    static const int BAUDS[] = { CONFIG_SIMPLDASH_GPS_BAUD, DASH_GPS_FAST_BAUD, 9600, 38400, 115200, 57600, 230400 };
+    int baud = 0;
+    for (int tries = 0; !baud; tries++) {
+        for (size_t i = 0; i < sizeof(BAUDS) / sizeof(BAUDS[0]) && !baud; i++) {
+            set_baud(BAUDS[i]);
+            if (listen(1200) >= 2) baud = BAUDS[i];
+        }
+        if (!baud && tries == 0) ESP_LOGW(TAG, "GPS ei vasta – kontrolli juhtmeid (otsin edasi)");
+    }
+    ESP_LOGI(TAG, "GPS vastab %d baudil", baud);
+#if CONFIG_SIMPLDASH_GPS_TX_GPIO >= 0
+    baud = configure(baud);
+#endif
+    portENTER_CRITICAL(&s_lock);
+    s_gps.baud = baud;
+    portEXIT_CRITICAL(&s_lock);
+    ESP_LOGI(TAG, "GPS: %d baud, soov %d Hz", baud, DASH_GPS_RATE_HZ);
     for (;;) {
-        int n = uart_read_bytes(GPS_UART, buf, sizeof(buf), pdMS_TO_TICKS(100));
-        if (n > 0) gps_feed((const char *)buf, (size_t)n);
+        int n = uart_read_bytes(GPS_UART, s_buf, sizeof(s_buf), pdMS_TO_TICKS(100));
+        if (n > 0) gps_feed((const char *)s_buf, (size_t)n);
     }
 }
 #endif
@@ -159,11 +275,11 @@ void gps_start(void)
         uart_param_config(GPS_UART, &cfg) != ESP_OK ||
         uart_set_pin(GPS_UART, CONFIG_SIMPLDASH_GPS_TX_GPIO >= 0 ? CONFIG_SIMPLDASH_GPS_TX_GPIO : UART_PIN_NO_CHANGE,
                      CONFIG_SIMPLDASH_GPS_RX_GPIO, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE) != ESP_OK) {
-        ESP_LOGE("gps", "UART ei käivitunud");
+        ESP_LOGE(TAG, "UART ei käivitunud");
         return;
     }
     xTaskCreate(gps_task, "gps", 4096, NULL, 5, NULL);
-    ESP_LOGI("gps", "GPS: RX GPIO%d, %d baud", CONFIG_SIMPLDASH_GPS_RX_GPIO, CONFIG_SIMPLDASH_GPS_BAUD);
+    ESP_LOGI(TAG, "GPS: RX GPIO%d, TX GPIO%d", CONFIG_SIMPLDASH_GPS_RX_GPIO, CONFIG_SIMPLDASH_GPS_TX_GPIO);
 #endif
 }
 #else

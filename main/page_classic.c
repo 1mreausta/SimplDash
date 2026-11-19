@@ -10,6 +10,7 @@
 #include "dash_common.h"
 #include "demo.h"
 #include "needles.h"
+#include "stats.h"
 
 #define C_FACE    lv_color_hex(0xF3F4EF)
 #define C_INK     lv_color_hex(0x15171A)
@@ -193,7 +194,7 @@ static lv_obj_t *zone_arc(lv_obj_t *face, int face_r, int r, lv_color_t c)
 
 static void set_zones(int limit)
 {
-    int y0 = DASH_SHIFT_START < limit ? DASH_SHIFT_START : limit;
+    int y0 = g_set.shift_start < limit ? g_set.shift_start : limit;
     int32_t ay = (int32_t)((float)TACH_SWEEP * y0 / DASH_CLASSIC_RPM_MAX);
     int32_t ar = (int32_t)((float)TACH_SWEEP * limit / DASH_CLASSIC_RPM_MAX);
     lv_arc_set_bg_angles(p.zone_y, ay, ar > ay ? ar : ay + 1);
@@ -323,8 +324,8 @@ static void update(const dash_state_t *s)
     cg_rim(&p.tach, s->flashing && s->blink_fast ? 2 : 0);
 
     /* kütusekulu pihustite töötsüklist (RB25DET: 6 × 630 cc) */
-    if (s->d.valid[SIG_FUEL_DUTY] && s->rpm > 300) {
-        float lph = DASH_INJ_CC_MIN * DASH_CYLINDERS * s->d.v[SIG_FUEL_DUTY] / 100.0f * 60.0f / 1000.0f;
+    float lph = stats_fuel_lph(s);
+    if (lph >= 0) {
         bool moving = spd >= 5;
         cg_set(&p.fuel, moving ? lph / spd * 100.0f : lph, 1);
         dash_set_text_if(p.fuel.unit, p.fuel.t_unit, sizeof(p.fuel.t_unit), moving ? "L/100km" : "L/h");

@@ -6,6 +6,7 @@
 #include "lvgl.h"
 #include "dash_ui.h"
 #include "maxxecu.h"
+#include "settings.h"
 #include "demo.h"
 #include "gps.h"
 int64_t g_fake_time_us = 1000000;
@@ -73,7 +74,8 @@ static void run(int ms){
 }
 /* hoia vilkumine "sees" faasis ja oota, kuni vaate nime teade kaob */
 static void settle(void){ run(1400); while(((g_fake_time_us/250000)%2)==1) run(5); while(((g_fake_time_us/250000)%2)==0) run(5); run(60); }
-static const char *NAMES[] = { "race", "kellad", "kaar", "tanav", "klassika", "0-100", "ring", "andmed" };
+static const char *NAMES[] = { "race", "kellad", "kaar", "tanav", "klassika", "0-100", "ring", "rada", "andmed", "seaded" };
+_Static_assert(sizeof(NAMES) / sizeof(NAMES[0]) == 10, "vaadete nimed");
 int main(void){
   lv_init(); lv_tick_set_cb(tick);
   lv_display_t *d = lv_display_create(1024,600);
@@ -134,8 +136,11 @@ int main(void){
     dash_ui_set_page(p); settle();
     snprintf(fn, sizeof(fn), "1_%s.ppm", NAMES[p]); dump(fn);
   }
-  /* shift + hoiatus */
+  /* shift + hoiatus (ribaga; suur täisekraani hoiatus eraldi pildil) */
   v[SIG_RPM]=7600; v[SIG_CLT]=109; v[SIG_GEAR]=4; flags = FLAG_LOGGING|FLAG_KNOCK;
+  g_set.alert_full = 1;
+  dash_ui_set_page(0); settle(); dump("2_suur_hoiatus.ppm");
+  g_set.alert_full = 0;
   for (int p = 0; p < dash_ui_page_count(); p++) {
     dash_ui_set_page(p); settle();
     snprintf(fn, sizeof(fn), "2_%s_hoiatus.ppm", NAMES[p]); dump(fn);

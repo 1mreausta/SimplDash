@@ -18,7 +18,7 @@
   .bezel { background:#000; padding:min(14px, 1.4vw); border-radius:18px; border:1px solid var(--line); }
   canvas { display:block; border-radius:4px; cursor:pointer; touch-action:none;
            image-rendering:auto; transition:filter .15s; }
-  .bar { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+  .bar { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:-2px; }
   button { background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:8px;
            padding:8px 14px; font:inherit; cursor:pointer; }
   button:hover { border-color:#3a4350; }
@@ -41,18 +41,22 @@
   <button id="next">Järgmine vaade ▶<kbd>→</kbd></button>
   <button id="demo">Demo sõit<kbd>D</kbd></button>
   <button id="can">CAN ühendus<kbd>C</kbd></button>
-  <button id="hot">Vesi kuumeneb üle<kbd>H</kbd></button>
   <button id="gps">GPS ühendatud<kbd>G</kbd></button>
+</div>
+<div class="bar">
   <button id="src">Kiirus: AUTO<kbd>S</kbd></button>
+  <button id="hot">Vesi kuumeneb üle<kbd>H</kbd></button>
+  <button id="knock">Knock<kbd>K</kbd></button>
+  <button id="boot">Käivitusekraan<kbd>B</kbd></button>
 </div>
 <div id="status">ühendan…</div>
 <div class="help">Hiir = puuteekraan: <b>libista</b> vasakule/paremale = vaade · <b>klõps</b> = heledus ·
-  <b>hoia 3 s</b> = demorežiim · GPS-iga lisanduvad vaated 0–100 ja RING ning kell · ANDMED vaates „NULLI TIPUD“ nupp töötab klõpsuga.</div>
+  <b>hoia 3 s</b> = demorežiim · GPS-iga lisanduvad vaated 0–100, RING ja RADA ning kell · ANDMED vaates „NULLI TIPUD“ nupp töötab klõpsuga · SEADED vaates ECU nupud, seaded, sõit ja hoiatuste logi · <a href="/web" target="_blank">telefoni veebileht</a> (plaadil Wi-Fi kaudu).</div>
 <script>
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 const img = ctx.createImageData(1024, 600), px = new Uint32Array(img.data.buffer);
 const st = document.getElementById('status');
-const PAGES = ['RACE', 'KELLAD', 'KAAR', 'TÄNAV', 'KLASSIKA', '0–100', 'RING', 'ANDMED'];
+const PAGES = ['RACE', 'KELLAD', 'KAAR', 'TÄNAV', 'KLASSIKA', '0–100', 'RING', 'RADA', 'ANDMED', 'SEADED'];
 const SRC = ['ECU', 'GPS', 'AUTO'];
 function setSrc(v) { const b = document.getElementById('src'); b.firstChild.nodeValue = 'Kiirus: ' + SRC[v]; }
 let since = 0, down = false, fps = 0, frames = 0, last = performance.now();
@@ -67,9 +71,9 @@ async function loop() {
     const r = await fetch('/frame?since=' + since);
     since = +r.headers.get('X-Frame');
     const b = +r.headers.get('X-Bright');
-    const [demo, can, hot, page, gps, src] = (r.headers.get('X-State') || '0,1,0,0,0,2').split(',').map(Number);
+    const [demo, can, hot, page, gps, src, knock] = (r.headers.get('X-State') || '0,1,0,0,0,2,0').split(',').map(Number);
     cv.style.filter = 'brightness(' + (0.25 + 0.75 * b / 100) + ')';
-    set('demo', demo, 'on'); set('can', can, 'on'); set('hot', hot, 'alert'); set('gps', gps, 'on'); setSrc(src);
+    set('demo', demo, 'on'); set('can', can, 'on'); set('hot', hot, 'alert'); set('knock', knock, 'alert'); set('gps', gps, 'on'); setSrc(src);
     const buf = await r.arrayBuffer();
     if (buf.byteLength === 1024 * 600 * 2) {
       const s = new Uint16Array(buf);
@@ -110,8 +114,11 @@ document.getElementById('can').onclick = () => key('can');
 document.getElementById('hot').onclick = () => key('hot');
 document.getElementById('gps').onclick = () => key('gps');
 document.getElementById('src').onclick = () => key('src');
+document.getElementById('knock').onclick = () => key('knock');
+document.getElementById('boot').onclick = () => key('boot');
+key('boot');   /* lehe avamisel käivitusekraan nagu süüte sisselülitamisel */
 addEventListener('keydown', e => {
-  const m = { ArrowLeft: 'prev', ArrowRight: 'next', d: 'demo', D: 'demo', c: 'can', C: 'can', h: 'hot', H: 'hot', g: 'gps', G: 'gps', s: 'src', S: 'src' }[e.key];
+  const m = { ArrowLeft: 'prev', ArrowRight: 'next', d: 'demo', D: 'demo', c: 'can', C: 'can', h: 'hot', H: 'hot', k: 'knock', K: 'knock', b: 'boot', B: 'boot', g: 'gps', G: 'gps', s: 'src', S: 'src' }[e.key];
   if (m) { e.preventDefault(); key(m); }
 });
 loop();

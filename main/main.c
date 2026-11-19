@@ -7,6 +7,8 @@
 #include "demo.h"
 #include "dev_display_lcd.h"
 #include "gps.h"
+#include "logger.h"
+#include "wifi_web.h"
 #include "dev_lcd_touch.h"
 #include "dev_ledc_ctrl.h"
 #include "driver/gpio.h"
@@ -179,6 +181,8 @@ void app_main(void)
     demo_set_enabled(true);
 #endif
     gps_start();  /* ainult kui SIMPLDASH_GPS_RX_GPIO >= 0 */
+    logger_start();     /* SD-kaart (TF-pesa); kaardi võib ka hiljem sisse panna */
+    wifi_web_start();   /* pääsupunkt + veebileht (kui seadetes lubatud) */
     if (can_rx_start() != ESP_OK) {
         ESP_LOGE(TAG, "CAN ei käivitunud – kontrolli GPIO seadeid (idf.py menuconfig → SimplDash)");
     }

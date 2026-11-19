@@ -23,5 +23,17 @@ void dash_ui_request_page_step(int dir);
 void dash_ui_set_speed_source(int src);
 int dash_ui_get_speed_source(void);
 
+/* GPS UTC → kohalik kell (seadete ajavöönd + suveaeg) */
+#include <stdbool.h>
+#include "gps.h"
+bool dash_ui_local_time(const gps_data_t *g, int *hh, int *mm);
+
+/* Viimase UI tsükli olek (veebilehe jaoks; loe lukuga) */
+struct dash_state_s;
+const struct dash_state_s *dash_ui_state(void);
+
+/* Näita käivitusekraani uuesti (simulaator). Kutsu LVGL lukuga. */
+void dash_ui_show_boot(void);
+
 /* Ava kindel vaade. Kutsu LVGL lukuga. */
 void dash_ui_set_page(int page);

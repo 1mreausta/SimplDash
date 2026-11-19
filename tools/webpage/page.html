@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SimplDash</title>
+<style>
+:root{--bg:#07090c;--panel:#10151b;--line:#232b35;--text:#eef1f5;--dim:#8a95a3;--acc:#00d4ff;--ok:#22e06b;--bad:#ff3b3b;--warn:#ffd21f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{position:sticky;top:0;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 16px;z-index:2}
+h1{font-size:20px;margin:0 0 8px;letter-spacing:.5px}
+h1 small{color:var(--dim);font-weight:400;font-size:13px;margin-left:6px}
+nav{display:flex;gap:6px;overflow-x:auto}
+nav button{flex:none}
+button{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 14px;font:inherit;cursor:pointer}
+button.on{border-color:var(--acc);color:var(--acc)}
+button.bad{border-color:var(--bad);color:var(--bad)}
+main{padding:12px 16px 40px;max-width:820px;margin:0 auto}
+section{display:none}section.on{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.card .k{color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+.card .v{font-size:24px;font-weight:600;margin-top:2px}
+.warnbox{background:var(--bad);border-radius:10px;padding:10px 12px;font-weight:700;margin-bottom:10px;display:none}
+.row{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:6px 0}
+.row label{flex:1;min-width:0}
+.row .u{color:var(--dim);font-size:13px;min-width:44px}
+.row input,.row select{width:130px;background:#0b0f14;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 8px;font:inherit}
+.row.dirty input,.row.dirty select{border-color:var(--warn)}
+h2{font-size:14px;color:var(--acc);margin:18px 0 4px;text-transform:uppercase;letter-spacing:.6px}
+.note{color:var(--dim);font-size:13px;margin:8px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--dim);font-weight:500}
+a{color:var(--acc)}
+#msg{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--acc);border-radius:8px;padding:8px 14px;display:none}
+progress{width:100%;height:18px}
+</style>
+</head>
+<body>
+<header>
+<h1>SimplDash <small id="ver"></small></h1>
+<nav>
+<button data-t="st" class="on">Ülevaade</button>
+<button data-t="set">Seaded</button>
+<button data-t="logs">Logid</button>
+<button data-t="al">Hoiatused</button>
+<button data-t="up">Uuendus</button>
+</nav>
+</header>
+<main>
+<section id="st" class="on">
+<div class="warnbox" id="warn"></div>
+<div class="grid" id="cards"></div>
+<p class="note" id="plat"></p>
+<h2>Reis</h2>
+<div class="row"><label>Nulli reisi läbisõit ja kütus</label><button onclick="act('/api/trip_reset','Reis nullitud')">Nulli reis</button></div>
+<div class="row"><label>Odomeeter (km)</label><input id="odo" type="number" min="0" step="1"><button onclick="setOdo()">Määra</button></div>
+</section>
+<section id="set">
+<p class="note">Muuda väärtust ja vajuta Salvesta. Tühi väli = hoiatus väljas. Tärniga (*) seaded rakenduvad pärast taaskäivitust.</p>
+<div id="sets"></div>
+<p><button onclick="saveAll()">Salvesta</button> <button onclick="act('/api/restart','Taaskäivitan…')">Taaskäivita dash</button> <button class="bad" onclick="if(confirm('Taasta kõik vaikeseaded?'))act('/api/defaults','Vaikeseaded taastatud').then(loadSet)">Vaikeseaded</button></p>
+</section>
+<section id="logs">
+<p class="note">Iga sõit on eraldi CSV-fail (avab Excel, RaceChrono jne).</p>
+<table><thead><tr><th>Fail</th><th>Suurus</th><th></th></tr></thead><tbody id="logt"></tbody></table>
+</section>
+<section id="al">
+<table><thead><tr><th>Aeg</th><th>Hoiatus</th><th>Väärtus</th><th>rpm</th></tr></thead><tbody id="alt"></tbody></table>
+<p><button class="bad" onclick="if(confirm('Kustuta hoiatuste logi?'))act('/api/alarms_clear','Kustutatud').then(loadAl)">Kustuta logi</button></p>
+</section>
+<section id="up">
+<p class="note">Vali uus püsivara fail <b>simpldash.bin</b> (GitHubi reliisist – NB: mitte simpldash-vX.bin, mis on terve mälu pilt aadressile 0x0). Ära lülita süüdet välja enne, kui dash taaskäivitub.</p>
+<p><input type="file" id="fw" accept=".bin"></p>
+<p><button onclick="ota()">Laadi üles</button></p>
+<progress id="prog" value="0" max="100" style="display:none"></progress>
+<p class="note" id="otamsg"></p>
+</section>
+</main>
+<div id="msg"></div>
+<script>
+const $=s=>document.querySelector(s);
+function msg(t){const m=$('#msg');m.textContent=t;m.style.display='block';clearTimeout(m._t);m._t=setTimeout(()=>m.style.display='none',2500)}
+async function j(u){const r=await fetch(u,{cache:'no-store'});return r.json()}
+async function act(u,t){const r=await j(u);msg(r.ok?t:(r.msg||'Viga'));return r}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
+ document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===b.dataset.t));
+ ({set:loadSet,logs:loadLogs,al:loadAl})[b.dataset.t]?.();
+});
+const fmt=(v,d,u)=>v==null?'--':(+v).toFixed(d)+(u?' '+u:'');
+async function loadSt(){
+ try{const s=await j('/api/status');$('#ver').textContent='v'+s.version;
+ const c=[['ECU',s.ecu?'ühendatud':'puudub'],['Pöörded',fmt(s.rpm,0)],['Kiirus',fmt(s.speed,0,'km/h')],['Vesi',fmt(s.clt,0,s.temp_unit)],
+ ['Õlirõhk',fmt(s.oil,1,s.press_unit)],['Aku',fmt(s.batt,1,'V')],
+ ['GPS',s.gps.connected?(s.gps.fix?s.gps.sats+' sat, '+s.gps.hz.toFixed(0)+' Hz':'otsib'):'puudub'],
+ ['SD-kaart',s.sd.card?(s.sd.active?'logib':'valmis'):'puudub'],['Läbisõit',fmt(s.odo_km,0,'km')],['Mootoritunnid',fmt(s.engine_h,1,'h')],
+ ['Reis',fmt(s.trip_km,1,'km')],['Reisi kütus',fmt(s.trip_l,1,'L')],['Keskmine',fmt(s.trip_avg,1,'L/100km')],
+ ['Reisi sõiduaeg',Math.floor(s.trip_s/3600)+':'+String(Math.floor(s.trip_s/60)%60).padStart(2,'0')],
+ ['Hetke kulu',fmt(s.fuel_now,1,s.fuel_now_unit)],['Paagis (ECU)',fmt(s.tank,1,'L')]];
+ $('#cards').innerHTML=c.map(x=>`<div class="card"><div class="k">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('');
+ const w=$('#warn');w.textContent=s.warn;w.style.display=s.warn?'block':'none';$('#plat').textContent=s.platform;
+ if(document.activeElement!==$('#odo'))$('#odo').placeholder=Math.round(s.odo_km);}catch(e){}
+}
+async function setOdo(){const v=$('#odo').value;if(v==='')return;await act('/api/odo?km='+encodeURIComponent(v),'Odomeeter määratud');loadSt()}
+let SETS=[];
+async function loadSet(){
+ SETS=await j('/api/settings');let h='';
+ for(const s of SETS){
+  if(s.type==='head'){h+=`<h2>${esc(s.label)}</h2>`;continue}
+  let inp;
+  if(s.opts)inp=`<select data-k="${s.key}">${s.opts.map((o,i)=>`<option value="${i}"${+s.value===i?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  else if(s.type==='text')inp=`<input data-k="${s.key}" value="${esc(s.value)}" maxlength="64"${s.key==='wifi_pass'?' type="password" placeholder="•••• (muutmata)"':''}>`;
+  else inp=`<input data-k="${s.key}" type="number" step="any" value="${s.value}"${s.nan_ok?' placeholder="väljas"':''}>`;
+  h+=`<div class="row"><label>${esc(s.label)}${s.restart?' *':''}</label>${inp}<span class="u">${esc(s.unit||'')}</span></div>`;
+ }
+ $('#sets').innerHTML=h;
+ $('#sets').querySelectorAll('input,select').forEach(e=>{if(e.type==='password')e.value='';e.oninput=e.onchange=()=>e.closest('.row').classList.add('dirty')});
+}
+async function saveAll(){
+ const d=[...$('#sets').querySelectorAll('.row.dirty [data-k]')];let bad=0;
+ for(const e of d){const r=await j('/api/set?key='+e.dataset.k+'&val='+encodeURIComponent(e.value));if(!r.ok)bad++;}
+ msg(bad?bad+' väärtust ei sobinud':'Salvestatud');loadSet();
+}
+async function loadLogs(){
+ const l=await j('/api/logs');l.sort((a,b)=>b.name.localeCompare(a.name));
+ $('#logt').innerHTML=l.length?l.map(f=>`<tr><td><a href="/logs/${f.name}" download>${f.name}</a></td><td>${(f.size/1024).toFixed(0)} kB</td><td><button class="bad" onclick="delLog('${f.name}')">Kustuta</button></td></tr>`).join(''):'<tr><td colspan=3>Logisid pole (või SD-kaarti pole)</td></tr>';
+}
+async function delLog(f){if(!confirm('Kustuta '+f+'?'))return;await act('/api/del?f='+encodeURIComponent(f),'Kustutatud');loadLogs()}
+async function loadAl(){
+ const l=await j('/api/alarms');
+ $('#alt').innerHTML=l.length?l.map(a=>`<tr><td>${a.utc?a.utc+' UTC':a.engine_h.toFixed(1)+' h'}</td><td>${esc(a.label)}</td><td>${a.value==null?'':a.value}${a.limit==null?'':' (piir '+a.limit+')'}</td><td>${a.rpm}</td></tr>`).join(''):'<tr><td colspan=4>Hoiatusi pole olnud</td></tr>';
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function ota(){
+ const f=$('#fw').files[0];if(!f){msg('Vali fail');return}
+ if(f.size<100000||f.size>7300000){msg('Fail ei tundu õige');return}
+ const x=new XMLHttpRequest();x.open('POST','/ota');
+ $('#prog').style.display='block';
+ x.upload.onprogress=e=>{$('#prog').value=e.loaded*100/e.total};
+ x.onload=()=>{$('#otamsg').textContent=x.status===200?'Valmis – dash taaskäivitub. Ühendu uuesti Wi-Fi-ga.':'Viga: '+x.responseText};
+ x.onerror=()=>{$('#otamsg').textContent='Ühendus katkes'};
+ x.send(f);
+}
+loadSt();setInterval(()=>{if($('#st').classList.contains('on'))loadSt()},1000);
+</script>
+</body>
+</html>

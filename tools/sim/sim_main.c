@@ -19,6 +19,8 @@
 #include "demo.h"
 #include "lvgl.h"
 #include "maxxecu.h"
+#include "logger.h"
+#include "web_api.h"
 
 #define SW 1024
 #define SH 600
@@ -108,7 +110,7 @@ static int qint(const char *q, const char *key, int def)
 
 static void handle(int fd)
 {
-    char req[2048];
+    char req[4096];
     ssize_t n = read(fd, req, sizeof(req) - 1);
     if (n <= 0) return;
     req[n] = 0;
@@ -120,9 +122,9 @@ static void handle(int fd)
     } else if (strncmp(path, "/frame", 6) == 0) {
         uint32_t since = (uint32_t)qint(path, "since", 0);
         char extra[160];
-        snprintf(extra, sizeof(extra), "X-Frame: %u\r\nX-Bright: %d\r\nX-State: %d,%d,%d,%d,%d,%d\r\n", s_frame_no,
+        snprintf(extra, sizeof(extra), "X-Frame: %u\r\nX-Bright: %d\r\nX-State: %d,%d,%d,%d,%d,%d,%d\r\n", s_frame_no,
                  s_bright, demo_is_enabled(), s_can, demo_is_overheat(), s_page, demo_is_gps(),
-                 dash_ui_get_speed_source());
+                 dash_ui_get_speed_source(), demo_is_knock());
         if (since == s_frame_no) reply(fd, "200 OK", "application/octet-stream", extra, NULL, 0);
         else reply(fd, "200 OK", "application/octet-stream", extra, s_fb, sizeof(s_fb));
     } else if (strncmp(path, "/in?", 4) == 0) {
@@ -142,7 +144,32 @@ static void handle(int fd)
         else if (!strcmp(k, "hot")) demo_set_overheat(!demo_is_overheat());
         else if (!strcmp(k, "gps")) demo_set_gps(!demo_is_gps());
         else if (!strcmp(k, "src")) dash_ui_set_speed_source((dash_ui_get_speed_source() + 1) % 3);
+        else if (!strcmp(k, "knock")) demo_set_knock(!demo_is_knock());
+        else if (!strcmp(k, "boot")) dash_ui_show_boot();
         reply(fd, "204 No Content", "text/plain", NULL, NULL, 0);
+    } else if (!strncmp(path, "/web", 4) || !strncmp(path, "/api/", 5) || !strncmp(path, "/logs/", 6)) {
+        /* sama veebileht nagu plaadi Wi-Fi-s (web_api.c) */
+        web_resp_t r;
+        web_api_handle(path, &r);
+        if (r.file[0]) {
+            FILE *f = fopen(r.file, "rb");
+            if (!f) {
+                reply(fd, "404 Not Found", "text/plain", NULL, "404", 3);
+                return;
+            }
+            fseek(f, 0, SEEK_END);
+            long n = ftell(f);
+            fseek(f, 0, SEEK_SET);
+            char *b = malloc((size_t)n + 1);
+            size_t got = fread(b, 1, (size_t)n, f);
+            fclose(f);
+            char extra[128];
+            snprintf(extra, sizeof(extra), "Content-Disposition: attachment; filename=\"%s\"\r\n", r.name);
+            reply(fd, "200 OK", r.type, extra, b, got);
+            free(b);
+        } else {
+            reply(fd, r.status == 200 ? "200 OK" : "404 Not Found", r.type, NULL, r.body, r.len);
+        }
     } else {
         reply(fd, "404 Not Found", "text/plain", NULL, "404", 3);
     }
@@ -182,6 +209,7 @@ int main(int argc, char **argv)
 
     const dash_ui_cfg_t cfg = { .on_brightness = on_bright, .on_page = on_page, .start_page = 0 };
     dash_ui_create(&cfg);
+    logger_start();          /* "SD-kaart" = tools/sim/data/sdcard */
     demo_set_enabled(true);  /* simulaator alustab kohe sõiduga */
     demo_set_gps(true);      /* ja võlts-GPS-iga (nupp "GPS" lülitab välja) */
 

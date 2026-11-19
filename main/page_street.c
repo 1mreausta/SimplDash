@@ -97,7 +97,8 @@ static void paint_off(void)
 static void stack_create(vstack_t *s, const dash_tile_t *cfg, lv_obj_t *parent, int x, bool scale)
 {
     memset(s, 0, sizeof(*s));
-    s->cfg = *cfg;
+    s->cfg = dash_units(*cfg);
+    cfg = &s->cfg;
     s->lit = -1;
     s->alarm = -1;
     const int top = 398, sh = 13, gap = 4, w = 52;
@@ -132,7 +133,7 @@ static void stack_update(vstack_t *s, const dash_state_t *st)
 {
     char buf[16];
     bool valid = st->d.valid[s->cfg.sig];
-    float v = st->d.v[s->cfg.sig] * s->cfg.scale;
+    float v = dash_tile_value(st, &s->cfg);
     if (valid) snprintf(buf, sizeof(buf), "%.*f%s", s->cfg.decimals, v, s->cfg.unit);
     else snprintf(buf, sizeof(buf), "--");
     dash_set_text_if(s->val, s->last, sizeof(s->last), buf);
@@ -242,7 +243,7 @@ static void create(lv_obj_t *scr)
     const int gx = 250, gw = W - 500, cw = gw / 3, ch = 96, gy = 392;
     for (size_t i = 0; i < N_GRID; i++) {
         cell_t *c = &p.cells[i];
-        c->cfg = GRID[i];
+        c->cfg = dash_units(GRID[i]);
         c->alarm = -1;
         lv_obj_t *cell = dash_box(scr, gx + (i % 3) * cw, gy + (i / 3) * ch, cw, ch, C_BG, 0);
         lv_obj_set_style_bg_opa(cell, LV_OPA_TRANSP, 0);
@@ -268,7 +269,7 @@ static void update(const dash_state_t *s)
         int8_t st = 0;
         if (i < lit) {
             if (s->flashing) st = s->blink_fast ? 4 : 0;
-            else st = r > p.rev_limit ? 3 : r >= DASH_SHIFT_START ? 2 : 1;
+            else st = r > p.rev_limit ? 3 : r >= g_set.shift_start ? 2 : 1;
         }
         if (st != p.seg_st[i]) {
             lv_color_t c = st == 1 ? G_LINE : st == 2 ? C_YELLOW : st == 3 ? C_RED : st == 4 ? C_BLUE

@@ -6,8 +6,9 @@
 #include <string.h>
 #include "dash_common.h"
 
-static const dash_tile_t ROWS[] = DASH_DATA_ROWS;
-#define N_ROWS (sizeof(ROWS) / sizeof(ROWS[0]))
+static const dash_tile_t ROWS0[] = DASH_DATA_ROWS;
+static dash_tile_t ROWS[sizeof(ROWS0) / sizeof(ROWS0[0])];   /* ühikud teisendatud */
+#define N_ROWS (sizeof(ROWS0) / sizeof(ROWS0[0]))
 #define PER_COL ((N_ROWS + 1) / 2)
 
 typedef struct {
@@ -35,6 +36,7 @@ static void on_reset(lv_event_t *e)
 
 static void create(lv_obj_t *scr)
 {
+    for (size_t i = 0; i < N_ROWS; i++) ROWS[i] = dash_units(ROWS0[i]);
     lv_obj_t *t = dash_label(scr, 40, C_TEXT, "ANDMED");
     lv_obj_set_pos(t, 16, 6);
     lv_obj_t *st = dash_label(scr, 17, C_DIM, "min / max alates käivitusest või nullimisest");
@@ -103,7 +105,7 @@ static void background(const dash_state_t *s)
     for (size_t i = 0; i < N_ROWS; i++) {
         if (!s->d.valid[ROWS[i].sig]) continue;
         row_t *r = &p.rows[i];
-        float v = s->d.v[ROWS[i].sig] * ROWS[i].scale;
+        float v = dash_tile_value(s, &ROWS[i]);
         if (!r->have) { r->lo = r->hi = v; r->have = true; }
         if (v < r->lo) r->lo = v;
         if (v > r->hi) r->hi = v;
