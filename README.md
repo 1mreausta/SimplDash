@@ -63,7 +63,7 @@ mis laaditakse aadressile **0x0**. Ühenda plaat USB-C kaudu ja:
   Flash Address `0x0`, vali fail → Program; või
 - **käsurealt:** `pip install esptool`, siis
   ```bash
-  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.2.bin
+  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.21.bin
   ```
 
 Muudatuste nimekiri: [CHANGELOG.md](CHANGELOG.md).

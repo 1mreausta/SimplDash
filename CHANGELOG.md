@@ -1,6 +1,6 @@
 # Muudatused
 
-## Avaldamata
+## v0.21 – 2026-11-19
 - GPS ikoon on igas vaates paremas servas, DEMO märk sellest vasakul.
 - 0–100: GPS-i hüpped ja katkestused (kiirendus üle 60 km/h/s või üle 0,5 s vahe) ei anna enam vale tulemust.
 - README pildid 0–100 ja RING vaadetest näidisandmetega.
