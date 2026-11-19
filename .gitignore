@@ -19,3 +19,4 @@ tools/sim/simpldash_sim
 .vscode/
 tools/web/obj/
 tools/web/dist/
+tools/sim/index.gen.html

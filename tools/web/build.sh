@@ -44,5 +44,6 @@ emcc $CFLAGS web_main.c "$OBJ/font_data.c" \
   -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=67108864 -sSTACK_SIZE=1048576 \
   -sEXPORTED_FUNCTIONS=_main,_sim_pointer,_sim_key,_sim_state,_sim_fb,_sim_frame_no,_sim_bench \
   -sEXPORTED_RUNTIME_METHODS=HEAPU16 -sENVIRONMENT=web
-cp index.html "$OUT/index.html"
+VER=$(sed -n 's/.*SIMPLDASH_VERSION "\(.*\)".*/\1/p' "$M/version.h")
+sed "s/__SIMPLDASH_VERSION__/$VER/g" index.html > "$OUT/index.html"
 ls -la "$OUT"
