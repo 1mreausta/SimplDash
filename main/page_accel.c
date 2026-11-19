@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "dash_common.h"
+#include "gps_pages.h"
 
 #define N_HIST 5
 
@@ -104,6 +105,19 @@ static void background(const dash_state_t *s)
     }
     p.t_prev = t;
     p.v_prev = v;
+}
+
+void accel_seed_history(const float *times, int n, float split)
+{
+    if (p.n_hist || n <= 0) return;
+    if (n > N_HIST) n = N_HIST;
+    for (int i = 0; i < n; i++) {
+        p.hist[i] = times[i];
+        if (p.best <= 0 || times[i] < p.best) p.best = times[i];
+    }
+    p.n_hist = n;
+    p.result = times[0];
+    p.split = split;
 }
 
 static void on_reset(lv_event_t *e)

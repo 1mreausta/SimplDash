@@ -5,6 +5,7 @@
 #include <time.h>
 #include "esp_random.h"
 #include "gps.h"
+#include "gps_pages.h"
 #include "maxxecu.h"
 #ifndef DASH_HOST
 #include "freertos/FreeRTOS.h"
@@ -30,8 +31,20 @@ static float  s_gps_since;
 void demo_set_gps(bool on)
 {
     s_gps = on;
-    if (on) { s_gps_t0 = time(NULL); s_gps_since = -1; }
-    else gps_reset();
+    if (on) {
+        s_gps_t0 = time(NULL);
+        s_gps_since = -1;
+        /* demo: start/finiš joon raja algusesse (parem sirge, sõit põhja) → ringid loetakse ise */
+        lap_set_line(TRACK_LAT0 + (-TRACK_LS / 2) / 110540.0,
+                     TRACK_LON0 + TRACK_R / (111320.0 * cos(TRACK_LAT0 * M_PI / 180)), 0, false);
+        /* ja paar "varasemat" demotulemust, et vaated poleks alguses tühjad */
+        static const float laps[] = { 30.42f, 29.87f, 31.05f };
+        static const float accel[] = { 5.06f, 4.97f, 5.12f };
+        lap_seed_history(laps, 3);
+        accel_seed_history(accel, 3, 2.31f);
+    } else {
+        gps_reset();
+    }
 }
 bool demo_is_gps(void) { return s_gps; }
 

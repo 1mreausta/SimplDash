@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "dash_common.h"
+#include "gps_pages.h"
 
 #define N_HIST 5
 #define DEG2RAD 0.017453292519943295
@@ -23,7 +24,7 @@ static struct {
     bool     have_prev;
     float    last, best, prev_best;
     float    hist[N_HIST];
-    int      n_hist, laps;
+    int      n_hist, laps, done;     /* laps = käimasolev ring, done = läbitud ringe */
     float    moving_course;
     /* ekraan */
     lv_obj_t *time, *info, *hint, *last_v, *best_v, *delta_v, *hist_l;
@@ -72,6 +73,7 @@ static void background(const dash_state_t *s)
                     memmove(&p.hist[1], &p.hist[0], sizeof(float) * (N_HIST - 1));
                     p.hist[0] = lap;
                     if (p.n_hist < N_HIST) p.n_hist++;
+                    p.done++;
                 }
                 p.laps++;
                 p.lap_start = tc;
@@ -85,27 +87,48 @@ static void background(const dash_state_t *s)
     p.have_prev = true;
 }
 
+void lap_set_line(double lat, double lon, float course_deg, bool start_now)
+{
+    gps_data_t g;
+    gps_snapshot(&g);
+    double c = course_deg * DEG2RAD;
+    p.lat0 = lat;
+    p.lon0 = lon;
+    p.dx = sin(c);
+    p.dy = cos(c);
+    p.mlat = 110540.0;
+    p.mlon = 111320.0 * cos(lat * DEG2RAD);
+    p.line_set = true;
+    p.running = start_now;
+    p.laps = start_now ? p.done + 1 : p.done;
+    p.lap_start = g.sample_us;
+    p.have_prev = false;              /* järgmine mõõtmine annab eelmise punkti */
+    p.last_sample = g.samples;
+}
+
+void lap_seed_history(const float *laps, int n)
+{
+    if (p.n_hist || n <= 0) return;
+    if (n > N_HIST) n = N_HIST;
+    for (int i = 0; i < n; i++) {
+        p.hist[i] = laps[i];
+        if (p.best <= 0 || laps[i] < p.best) p.best = laps[i];
+    }
+    p.n_hist = n;
+    p.done = n;
+    p.laps = p.running ? n + 1 : n;
+    p.last = laps[0];
+    p.prev_best = 0;
+    for (int i = 1; i < n; i++) if (p.prev_best <= 0 || laps[i] < p.prev_best) p.prev_best = laps[i];
+}
+
 static void on_mark(lv_event_t *e)
 {
     (void)e;
     gps_data_t g;
     gps_snapshot(&g);
     if (!g.fix) return;
-    double c = (g.speed_kmh > 5 ? g.course : p.moving_course) * DEG2RAD;
-    p.lat0 = g.lat;
-    p.lon0 = g.lon;
-    p.dx = sin(c);
-    p.dy = cos(c);
-    p.mlat = 110540.0;
-    p.mlon = 111320.0 * cos(g.lat * DEG2RAD);
-    p.line_set = true;
-    p.running = true;                 /* ring algab märkimise hetkest */
-    p.lap_start = g.sample_us;
-    p.laps = 1;
-    p.px = p.py = 0;
-    p.pt = g.sample_us;
-    p.have_prev = true;
-    p.last_sample = g.samples;
+    lap_set_line(g.lat, g.lon, g.speed_kmh > 5 ? g.course : p.moving_course, true);
 }
 
 static void on_reset(lv_event_t *e)
@@ -113,7 +136,7 @@ static void on_reset(lv_event_t *e)
     (void)e;
     p.line_set = p.running = false;
     p.last = p.best = p.prev_best = 0;
-    p.n_hist = p.laps = 0;
+    p.n_hist = p.laps = p.done = 0;
 }
 
 static lv_obj_t *panel(lv_obj_t *scr, int x, int w, const char *title)
@@ -213,7 +236,7 @@ static void update(const dash_state_t *s)
         char t[16];
         dash_fmt_time(p.hist[i], true, t, sizeof(t));
         size_t l = strlen(buf);
-        snprintf(buf + l, sizeof(buf) - l, "%s%d.  %s%s", i ? "\n" : "", p.laps - 1 - i, t,
+        snprintf(buf + l, sizeof(buf) - l, "%s%d.  %s%s", i ? "\n" : "", p.done - i, t,
                  p.hist[i] == p.best ? "   parim" : "");
     }
     if (!p.n_hist) snprintf(buf, sizeof(buf), "–");
