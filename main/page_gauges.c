@@ -8,7 +8,7 @@
 #include "dash_common.h"
 
 #define R      186          /* kella raadius */
-#define CY     318
+#define CY     282
 #define CX_L   212
 #define CX_R   (W - 212)
 #define SWEEP  270          /* kella kaare ulatus kraadides */
@@ -156,11 +156,11 @@ static void vbar_create(vbar_t *b, const dash_tile_t *cfg, lv_obj_t *parent, int
     b->cfg = dash_units(*cfg);
     cfg = &b->cfg;
     b->alarm = -1;
-    lv_obj_t *cap = centered_label(parent, 15, C_DIM, x - 25, 118, 60);
+    lv_obj_t *cap = centered_label(parent, 15, C_DIM, x - 25, 82, 60);
     lv_label_set_text(cap, cfg->label);
     b->bar = dash_bar(parent, 10, 336, true);
-    lv_obj_set_pos(b->bar, x, 142);
-    b->val = centered_label(parent, 20, C_TEXT, x - 25, 484, 60);
+    lv_obj_set_pos(b->bar, x, 106);
+    b->val = centered_label(parent, 20, C_TEXT, x - 25, 448, 60);
 }
 
 static void vbar_update(vbar_t *b, const dash_state_t *s)
@@ -213,7 +213,7 @@ static void create(lv_obj_t *scr)
     p.boost = centered_label(scr, 32, C_TEXT, CX_R - 80, CY + 68, 160);
 
     /* Keskmine tulp */
-    const int col_x = 432, col_w = 162, row_h = 66, top = 142;
+    const int col_x = 432, col_w = 162, row_h = 66, top = 106;
     for (size_t i = 0; i < N_CENTER; i++) {
         row_t *r = &p.rows[i];
         r->cfg = dash_units(CENTER[i]);
@@ -290,4 +290,4 @@ static void update(const dash_state_t *s)
     dash_flags_update(&p.flags, s);
 }
 
-const dash_page_t page_gauges = { "KELLAD", 52, create, update, NULL, NULL, 938, 4, 16, 4, 856, 4 };
+const dash_page_t page_gauges = { "KELLAD", 40, create, update, NULL, NULL, 938, 4, 16, 4, 856, 4 };

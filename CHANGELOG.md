@@ -1,5 +1,9 @@
 # Muudatused
 
+## v0.4.6 – 2026-11-20
+- KELLAD vaate keskosa (kellad, keskmine tulp, VESI/PAAK ribad) on kõrgemal: vahe olekulippude ja alumise
+  reaga on võrdne. Hoiatusriba on selles vaates veidi kõrgemal, et see ei kataks ÕLI rida.
+
 ## v0.4.5 – 2026-11-20
 - Veebilehe odomeeter lükkab vigase väärtuse tagasi (negatiivne, lõpmatu, „nan“ rikkusid veebilehe oleku).
 - Wi-Fi nime ei saa veebilehel tühjaks teha.
