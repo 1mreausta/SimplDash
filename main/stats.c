@@ -34,16 +34,30 @@ void stats_trip_reset(void)
     save(s_last_us);
 }
 
-void stats_set_odo_km(double km)
+bool stats_set_odo_km(double km)
 {
+    if (!(km >= 0 && km < 1e7)) return false;   /* ka NaN ja lõpmatus */
     st.odo_m = km * 1000.0;
     save(s_last_us);
+    return true;
 }
 
 float stats_fuel_lph(const dash_state_t *s)
 {
     if (s->stale || !s->d.valid[SIG_FUEL_DUTY] || s->rpm < 300) return -1;
     return g_set.inj_cc * g_set.cylinders * s->d.v[SIG_FUEL_DUTY] / 100.0f * 60.0f / 1000.0f;
+}
+
+float stats_trip_avg(void)
+{
+    return st.trip_m > 1000 ? st.trip_fuel_l / (float)(st.trip_m / 100000) : -1;
+}
+
+float stats_fuel_now(const dash_state_t *s, bool *per_km)
+{
+    float lph = stats_fuel_lph(s), spd = s->d.valid[SIG_SPEED] ? s->d.v[SIG_SPEED] : 0;
+    *per_km = spd >= 5;
+    return lph < 0 ? -1 : *per_km ? lph / spd * 100 : lph;
 }
 
 void stats_update(const dash_state_t *s)

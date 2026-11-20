@@ -1,5 +1,11 @@
 # Muudatused
 
+## Avaldamata
+- Veebilehe odomeeter lükkab vigase väärtuse tagasi (negatiivne, lõpmatu, „nan“ rikkusid veebilehe oleku).
+- Wi-Fi nime ei saa veebilehel tühjaks teha.
+- Veebilehe seadete väärtused on sama täpsusega nagu dashil (nt rõhk 1 komakohaga).
+- Koodi koristus: kütusekulu arvutus, nupp, kaar ja paneel on ühes kohas; uus test veebi sisendile.
+
 ## v0.4.4 – 2026-11-20
 - Demorežiim plaadil ei loe enam läbisõitu, mootoritunde ega reisi kütust ning ei kirjuta hoiatuste logi ega
   SD-kaardi logi (simulaatoris endiselt kirjutab).

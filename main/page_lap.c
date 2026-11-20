@@ -42,16 +42,6 @@ static void on_reset(lv_event_t *e)
     lap_reset_times();
 }
 
-static lv_obj_t *panel(lv_obj_t *scr, int x, int w, const char *title)
-{
-    lv_obj_t *b = dash_box(scr, x, 430, w, 156, C_PANEL, 10);
-    lv_obj_set_style_border_color(b, C_LINE, 0);
-    lv_obj_set_style_border_width(b, 1, 0);
-    lv_obj_t *t = dash_label(b, 17, C_DIM, title);
-    lv_obj_set_pos(t, 14, 8);
-    return b;
-}
-
 static void create(lv_obj_t *scr)
 {
     lv_obj_t *title = dash_label(scr, 30, C_DIM, "RINGIAEG");
@@ -95,21 +85,21 @@ static void create(lv_obj_t *scr)
     lv_obj_set_pos(p.hint, cx, 336);
     p.hint_shown = -1;
 
-    lv_obj_t *b1 = panel(scr, 12, 240, "VIIMANE RING");
+    lv_obj_t *b1 = dash_panel(scr, 12, 240, "VIIMANE RING");
     p.last_v = dash_label(b1, 52, C_TEXT, "--");
     lv_obj_align(p.last_v, LV_ALIGN_BOTTOM_RIGHT, -14, -34);
     p.delta_v = dash_label(b1, 24, C_DIM, "");
     lv_obj_align(p.delta_v, LV_ALIGN_BOTTOM_RIGHT, -14, -6);
     p.delta_col = -1;
-    lv_obj_t *b2 = panel(scr, 264, 240, "PARIM RING");
+    lv_obj_t *b2 = dash_panel(scr, 264, 240, "PARIM RING");
     p.best_v = dash_label(b2, 52, C_YELLOW, "--");
     lv_obj_align(p.best_v, LV_ALIGN_BOTTOM_RIGHT, -14, -34);
-    lv_obj_t *b3 = panel(scr, 516, 300, "RINGID");
+    lv_obj_t *b3 = dash_panel(scr, 516, 300, "RINGID");
     p.hist_l = dash_label(b3, 22, C_TEXT, "");
     lv_obj_set_pos(p.hist_l, 14, 30);
 
-    dash_button(scr, "MÄRGI JOON", 828, 430, 184, 74, on_mark);
-    dash_button(scr, "NULLI AJAD", 828, 512, 184, 74, on_reset);
+    dash_button(scr, "MÄRGI JOON", 828, 430, 184, 74, on_mark, NULL);
+    dash_button(scr, "NULLI AJAD", 828, 512, 184, 74, on_reset, NULL);
 }
 
 static void update(const dash_state_t *s)

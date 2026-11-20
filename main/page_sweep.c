@@ -35,28 +35,6 @@ static struct {
 static lv_style_t st_red_ind, st_red_items;
 static const char *TXT[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", NULL };
 
-static lv_obj_t *mk_arc(lv_obj_t *parent, int r, int width, lv_color_t bg, lv_color_t ind)
-{
-    lv_obj_t *a = lv_arc_create(parent);
-    lv_obj_remove_style_all(a);
-    lv_obj_set_size(a, 2 * r, 2 * r);
-    lv_obj_set_pos(a, CX - r, CY - r);
-    lv_arc_set_rotation(a, ROT);
-    lv_arc_set_bg_angles(a, 0, SWEEP);
-    lv_arc_set_range(a, 0, 1000);
-    lv_arc_set_value(a, 0);
-    lv_obj_set_style_arc_width(a, width, LV_PART_MAIN);
-    lv_obj_set_style_arc_color(a, bg, LV_PART_MAIN);
-    lv_obj_set_style_arc_opa(a, LV_OPA_COVER, LV_PART_MAIN);
-    lv_obj_set_style_arc_rounded(a, false, LV_PART_MAIN);
-    lv_obj_set_style_arc_width(a, width, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_color(a, ind, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_opa(a, LV_OPA_COVER, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_rounded(a, false, LV_PART_INDICATOR);
-    lv_obj_set_clickable(a, false);
-    lv_obj_set_scrollable(a, false);
-    return a;
-}
 
 static void set_limit(int limit)
 {
@@ -85,9 +63,9 @@ static void create(lv_obj_t *scr)
     dash_flags_create(&p.flags, scr, W / 2, 10);
 
     /* kaar: välisservas punane tsoon, siis näidukaar */
-    p.band = mk_arc(scr, R + 8, 6, lv_color_hex(0x8A1414), C_BG);
+    p.band = dash_arc(scr, CX, CY, R + 8, 6, ROT, SWEEP, lv_color_hex(0x8A1414), C_BG);
     lv_obj_set_style_arc_opa(p.band, LV_OPA_TRANSP, LV_PART_INDICATOR);
-    p.arc = mk_arc(scr, R, ARC_W, C_TRACK, C_ACCENT);
+    p.arc = dash_arc(scr, CX, CY, R, ARC_W, ROT, SWEEP, C_TRACK, C_ACCENT);
 
     lv_obj_t *s = lv_scale_create(scr);
     const int sr = R - ARC_W - 6;

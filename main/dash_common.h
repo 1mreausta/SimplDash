@@ -74,8 +74,8 @@ void ecu_panel_update(const dash_state_t *s);
 bool dash_need_gps(const dash_state_t *s);
 /* Aeg kujul m:ss.cc või ss.cc */
 void dash_fmt_time(float sec, bool minutes, char *buf, size_t cap);
-/* Nupp (vajutatav) */
-lv_obj_t *dash_button(lv_obj_t *parent, const char *txt, int x, int y, int w, int h, lv_event_cb_t cb);
+/* Nupp (vajutatav); ud = sündmuse user_data */
+lv_obj_t *dash_button(lv_obj_t *parent, const char *txt, int x, int y, int w, int h, lv_event_cb_t cb, void *ud);
 
 /* Font Barlow Condensed Bold soovitud suuruses (loob esimesel korral) */
 lv_font_t *dash_font(int px);
@@ -86,6 +86,10 @@ void dash_set_text_if(lv_obj_t *l, char *cache, size_t cap, const char *txt);
 /* suur number + väike ühik flex-reas (vanema alumise serva keskel, nihkega y_ofs) */
 lv_obj_t *dash_value_with_unit(lv_obj_t *parent, int px, lv_color_t color, const char *unit,
                                int y_ofs, int unit_drop);
+/* Kaar ilma nuputa (keskpunkt cx,cy; rot = algusnurk, sweep = ulatus kraadides; väärtus 0..1000) */
+lv_obj_t *dash_arc(lv_obj_t *parent, int cx, int cy, int r, int width, int rot, int sweep, lv_color_t bg, lv_color_t ind);
+/* Alumise rea pealkirjaga paneel (y 430, kõrgus 156) – KIIRENDUS ja RING vaated */
+lv_obj_t *dash_panel(lv_obj_t *parent, int x, int w, const char *title);
 lv_obj_t *dash_bar(lv_obj_t *parent, int w, int h, bool vertical);
 void dash_bar_set(lv_obj_t *bar, float v, float lo, float hi);
 

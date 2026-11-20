@@ -115,14 +115,15 @@ static void status_json(void)
     out(",\"rows\":%u,\"error\":%s}", (unsigned)ls.rows, ls.error ? "true" : "false");
     out(",\"odo_km\":%.1f,\"engine_h\":%.2f,\"trip_km\":%.2f,\"trip_l\":%.2f", st->odo_m / 1000, st->engine_s / 3600.0,
         st->trip_m / 1000, st->trip_fuel_l);
+    float avg = stats_trip_avg();
     out(",\"trip_avg\":");
-    jnum(st->trip_m > 1000 ? st->trip_fuel_l / (float)(st->trip_m / 100000) : NAN, 1);
+    jnum(avg < 0 ? NAN : avg, 1);
     out(",\"trip_s\":%u", (unsigned)st->trip_s);
-    /* hetke kulu: liikudes L/100km, seistes L/h */
-    float lph = stats_fuel_lph(s), spd = s->d.valid[SIG_SPEED] ? s->d.v[SIG_SPEED] : 0;
+    bool per_km;
+    float now = stats_fuel_now(s, &per_km);
     out(",\"fuel_now\":");
-    jnum(lph < 0 ? NAN : spd >= 5 ? lph / spd * 100 : lph, 1);
-    out(",\"fuel_now_unit\":\"%s\"", spd >= 5 ? "L/100km" : "L/h");
+    jnum(now < 0 ? NAN : now, 1);
+    out(",\"fuel_now_unit\":\"%s\"", per_km ? "L/100km" : "L/h");
     out(",\"tank\":");
     jnum(s->d.valid[SIG_FUEL_TANK] ? s->d.v[SIG_FUEL_TANK] : NAN, 1);
     out(",\"platform\":");
@@ -145,18 +146,7 @@ static void settings_json(void)
         out(",\"type\":\"%s\"", T[x->type]);
         if (x->type == ST_HEAD) { out("}"); continue; }
         char v[80];
-        switch (x->type) {
-        case ST_TEXT: snprintf(v, sizeof(v), "%s", (const char *)x->ptr); break;
-        case ST_FLOAT: {
-            float f = *(float *)x->ptr;
-            if (isnan(f)) v[0] = 0;
-            else snprintf(v, sizeof(v), "%.*f", x->kind == UK_KPA ? (g_set.unit_press_psi ? 0 : 2) : x->decimals,
-                          settings_disp(x->kind, f));
-            break;
-        }
-        case ST_PAGE: snprintf(v, sizeof(v), "%d", !((g_set.pages_off >> x->bit) & 1)); break;
-        default: snprintf(v, sizeof(v), "%d", x->size == 2 ? *(int16_t *)x->ptr : *(int8_t *)x->ptr); break;
-        }
+        settings_item_value(x, v, sizeof(v));
         out(",\"value\":");
         js(v);
         out(",\"unit\":");
@@ -268,6 +258,7 @@ void web_api_handle(const char *uri, web_resp_t *r)
         for (int i = 0; i < n; i++) {
             if (!strcmp(it[i].key, a)) {
                 if (!strcmp(a, "wifi_pass") && strlen(b) > 0 && strlen(b) < 8) break;
+                if (!strcmp(a, "wifi_ssid") && !b[0]) break;   /* tühja nimega pääsupunkti ei leia */
                 ok = settings_item_set(&it[i], b);
                 break;
             }
@@ -277,8 +268,8 @@ void web_api_handle(const char *uri, web_resp_t *r)
         stats_trip_reset();
         ok_json(true, NULL);
     } else if (!strcmp(path, "/api/odo") && qparam(uri, "km", a, sizeof(a))) {
-        stats_set_odo_km(atof(a));
-        ok_json(true, NULL);
+        bool ok = stats_set_odo_km(atof(a));
+        ok_json(ok, ok ? "" : "vigane läbisõit");
     } else if (!strcmp(path, "/api/alarms_clear")) {
         alarms_log_clear();
         ok_json(true, NULL);

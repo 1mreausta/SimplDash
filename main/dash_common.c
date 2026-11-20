@@ -274,7 +274,7 @@ void dash_fmt_time(float sec, bool minutes, char *buf, size_t cap)
     else snprintf(buf, cap, "%d.%02d", cs / 100, cs % 100);
 }
 
-lv_obj_t *dash_button(lv_obj_t *parent, const char *txt, int x, int y, int w, int h, lv_event_cb_t cb)
+lv_obj_t *dash_button(lv_obj_t *parent, const char *txt, int x, int y, int w, int h, lv_event_cb_t cb, void *ud)
 {
     lv_obj_t *btn = lv_button_create(parent);
     lv_obj_remove_style_all(btn);
@@ -288,6 +288,40 @@ lv_obj_t *dash_button(lv_obj_t *parent, const char *txt, int x, int y, int w, in
     lv_obj_set_style_radius(btn, 8, 0);
     lv_obj_t *l = dash_label(btn, 22, C_TEXT, txt);
     lv_obj_center(l);
-    lv_obj_add_event_cb(btn, cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(btn, cb, LV_EVENT_CLICKED, ud);
+    lv_obj_set_event_bubble(btn, true);   /* libistamine nupult vahetab vaadet */
     return btn;
+}
+
+lv_obj_t *dash_arc(lv_obj_t *parent, int cx, int cy, int r, int width, int rot, int sweep, lv_color_t bg, lv_color_t ind)
+{
+    lv_obj_t *a = lv_arc_create(parent);
+    lv_obj_remove_style_all(a);
+    lv_obj_set_size(a, 2 * r, 2 * r);
+    lv_obj_set_pos(a, cx - r, cy - r);
+    lv_arc_set_rotation(a, rot);
+    lv_arc_set_bg_angles(a, 0, sweep);
+    lv_arc_set_range(a, 0, 1000);
+    lv_arc_set_value(a, 0);
+    lv_obj_set_style_arc_width(a, width, LV_PART_MAIN);
+    lv_obj_set_style_arc_color(a, bg, LV_PART_MAIN);
+    lv_obj_set_style_arc_opa(a, LV_OPA_COVER, LV_PART_MAIN);
+    lv_obj_set_style_arc_rounded(a, false, LV_PART_MAIN);
+    lv_obj_set_style_arc_width(a, width, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_color(a, ind, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_opa(a, LV_OPA_COVER, LV_PART_INDICATOR);
+    lv_obj_set_style_arc_rounded(a, false, LV_PART_INDICATOR);
+    lv_obj_set_clickable(a, false);
+    lv_obj_set_scrollable(a, false);
+    return a;
+}
+
+lv_obj_t *dash_panel(lv_obj_t *parent, int x, int w, const char *title)
+{
+    lv_obj_t *b = dash_box(parent, x, 430, w, 156, C_PANEL, 10);
+    lv_obj_set_style_border_color(b, C_LINE, 0);
+    lv_obj_set_style_border_width(b, 1, 0);
+    lv_obj_t *t = dash_label(b, 17, C_DIM, title);
+    lv_obj_set_pos(t, 14, 8);
+    return b;
 }

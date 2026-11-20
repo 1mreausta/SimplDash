@@ -324,14 +324,10 @@ static void update(const dash_state_t *s)
     cg_rim(&p.tach, s->flashing && s->blink_fast ? 2 : 0);
 
     /* kütusekulu pihustite töötsüklist (RB25DET: 6 × 630 cc) */
-    float lph = stats_fuel_lph(s);
-    if (lph >= 0) {
-        bool moving = spd >= 5;
-        cg_set(&p.fuel, moving ? lph / spd * 100.0f : lph, 1);
-        dash_set_text_if(p.fuel.unit, p.fuel.t_unit, sizeof(p.fuel.t_unit), moving ? "L/100km" : "L/h");
-    } else {
-        cg_set(&p.fuel, 0, 1);
-    }
+    bool per_km;
+    float fuel = stats_fuel_now(s, &per_km);
+    cg_set(&p.fuel, fuel >= 0 ? fuel : 0, 1);
+    if (fuel >= 0) dash_set_text_if(p.fuel.unit, p.fuel.t_unit, sizeof(p.fuel.t_unit), per_km ? "L/100km" : "L/h");
 
     cg_set(&p.clt, s->d.valid[SIG_CLT] ? s->d.v[SIG_CLT] : 40, 1);
     cg_rim(&p.clt, dash_sig_alarm(s, SIG_CLT) && s->blink ? 1 : 0);

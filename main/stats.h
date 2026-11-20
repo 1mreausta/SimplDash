@@ -24,5 +24,9 @@ const dash_stats_t *stats_get(void);
 void stats_trip_reset(void);
 /* Hetke kütusekulu L/h (pihustite töötsüklist); < 0 kui andmeid pole */
 float stats_fuel_lph(const dash_state_t *s);
-/* Seadmine (nt veebilehelt: odomeetri algväärtus) */
-void stats_set_odo_km(double km);
+/* Keskmine kulu L/100km reisil; < 0 kui reis alla 1 km */
+float stats_trip_avg(void);
+/* Hetke kulu: liikudes L/100km (*per_km = true), seistes L/h; < 0 kui andmeid pole */
+float stats_fuel_now(const dash_state_t *s, bool *per_km);
+/* Seadmine (nt veebilehelt: odomeetri algväärtus); false = vigane väärtus */
+bool stats_set_odo_km(double km);

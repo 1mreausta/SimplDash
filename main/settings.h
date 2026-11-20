@@ -88,6 +88,8 @@ const char *settings_unit(unit_kind_t k);
 int settings_items(const set_item_t **out);
 /* Väärtus kuvatava tekstina */
 void settings_item_text(const set_item_t *it, char *buf, int cap);
+/* Väärtus ilma ühikuta (veebileht): arv kuvatavates ühikutes, ENUM/PAGE indeks, FLOAT väljas = "" */
+void settings_item_value(const set_item_t *it, char *buf, int cap);
 /* Muuda sammu võrra (dir = +1 / -1); FLOAT nan_ok puhul min-st alla = väljas */
 void settings_item_step(const set_item_t *it, int dir);
 /* Määra väärtus tekstist (veebileht; kuvatavates ühikutes). true = õnnestus */

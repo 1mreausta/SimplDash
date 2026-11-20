@@ -130,16 +130,6 @@ static void on_reset(lv_event_t *e)
     if (p.st == ST_DONE) p.st = ST_WAIT;
 }
 
-static lv_obj_t *panel(lv_obj_t *scr, int x, int w, const char *title)
-{
-    lv_obj_t *b = dash_box(scr, x, 430, w, 156, C_PANEL, 10);
-    lv_obj_set_style_border_color(b, C_LINE, 0);
-    lv_obj_set_style_border_width(b, 1, 0);
-    lv_obj_t *t = dash_label(b, 17, C_DIM, title);
-    lv_obj_set_pos(t, 14, 8);
-    return b;
-}
-
 static void create(lv_obj_t *scr)
 {
     lv_obj_t *title = dash_label(scr, 30, C_DIM, "0–100 km/h");
@@ -163,17 +153,17 @@ static void create(lv_obj_t *scr)
     lv_obj_set_style_text_align(p.speed, LV_TEXT_ALIGN_RIGHT, 0);
     lv_obj_set_pos(p.speed, W - 220, 360);
 
-    lv_obj_t *b1 = panel(scr, 12, 240, "0–" "60 km/h");
+    lv_obj_t *b1 = dash_panel(scr, 12, 240, "0–" "60 km/h");
     p.split_v = dash_label(b1, 64, C_TEXT, "--");
     lv_obj_align(p.split_v, LV_ALIGN_BOTTOM_RIGHT, -14, -10);
-    lv_obj_t *b2 = panel(scr, 264, 240, "PARIM");
+    lv_obj_t *b2 = dash_panel(scr, 264, 240, "PARIM");
     p.best_v = dash_label(b2, 64, C_YELLOW, "--");
     lv_obj_align(p.best_v, LV_ALIGN_BOTTOM_RIGHT, -14, -10);
-    lv_obj_t *b3 = panel(scr, 516, 300, "VIIMASED");
+    lv_obj_t *b3 = dash_panel(scr, 516, 300, "VIIMASED");
     p.hist_l = dash_label(b3, 22, C_TEXT, "");
     lv_obj_set_pos(p.hist_l, 14, 30);
 
-    dash_button(scr, "NULLI", 828, 430, 184, 156, on_reset);
+    dash_button(scr, "NULLI", 828, 430, 184, 156, on_reset, NULL);
 }
 
 static void update(const dash_state_t *s)

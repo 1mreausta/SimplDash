@@ -59,29 +59,6 @@ static lv_style_t st_red_ind, st_red_items;
 
 static const char *TACH_TXT[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", NULL };
 
-/* Kaar ilma nuputa, rotation 135° → 0 vasakul all, max paremal all */
-static lv_obj_t *mk_arc(lv_obj_t *parent, int cx, int cy, int r, int width, lv_color_t bg, lv_color_t ind)
-{
-    lv_obj_t *a = lv_arc_create(parent);
-    lv_obj_remove_style_all(a);
-    lv_obj_set_size(a, 2 * r, 2 * r);
-    lv_obj_set_pos(a, cx - r, cy - r);
-    lv_arc_set_rotation(a, 135);
-    lv_arc_set_bg_angles(a, 0, SWEEP);
-    lv_arc_set_range(a, 0, 1000);
-    lv_arc_set_value(a, 0);
-    lv_obj_set_style_arc_width(a, width, LV_PART_MAIN);
-    lv_obj_set_style_arc_color(a, bg, LV_PART_MAIN);
-    lv_obj_set_style_arc_opa(a, LV_OPA_COVER, LV_PART_MAIN);
-    lv_obj_set_style_arc_rounded(a, false, LV_PART_MAIN);
-    lv_obj_set_style_arc_width(a, width, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_color(a, ind, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_opa(a, LV_OPA_COVER, LV_PART_INDICATOR);
-    lv_obj_set_style_arc_rounded(a, false, LV_PART_INDICATOR);
-    lv_obj_set_clickable(a, false);
-    lv_obj_set_scrollable(a, false);
-    return a;
-}
 
 static void gauge_create(gauge_t *g, lv_obj_t *parent, int cx, int max, int ticks, int major,
                          const char **txt, int label_px)
@@ -95,11 +72,11 @@ static void gauge_create(gauge_t *g, lv_obj_t *parent, int cx, int max, int tick
     lv_obj_set_style_border_width(disc, 3, 0);
 
     /* punane tsoon (ainult tahhomeetril nähtav) välisservas */
-    g->band = mk_arc(parent, cx, CY, R - 8, 6, lv_color_hex(0x8A1414), C_BG);
+    g->band = dash_arc(parent, cx, CY, R - 8, 6, 135, SWEEP, lv_color_hex(0x8A1414), C_BG);
     lv_obj_set_style_arc_opa(g->band, LV_OPA_TRANSP, LV_PART_INDICATOR);
     lv_obj_set_hidden(g->band, true);
 
-    g->arc = mk_arc(parent, cx, CY, R - 16, 16, C_TRACK, C_ACCENT);
+    g->arc = dash_arc(parent, cx, CY, R - 16, 16, 135, SWEEP, C_TRACK, C_ACCENT);
 
     lv_obj_t *s = lv_scale_create(parent);
     const int sr = R - 38;

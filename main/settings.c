@@ -289,6 +289,15 @@ void settings_item_text(const set_item_t *it, char *buf, int cap)
     }
 }
 
+void settings_item_value(const set_item_t *it, char *buf, int cap)
+{
+    if (it->type == ST_HEAD) buf[0] = 0;
+    else if (it->type == ST_TEXT) snprintf(buf, cap, "%s", (const char *)it->ptr);
+    else if (it->type != ST_FLOAT) snprintf(buf, cap, "%d", get_int(it));
+    else if (isnan(*(float *)it->ptr)) buf[0] = 0;
+    else snprintf(buf, cap, "%.*f", dec_for(it), settings_disp(it->kind, *(float *)it->ptr));
+}
+
 /* "Vaheta käiku" peab olema vähemalt 100 rpm üle "Esimene tuli" (muidu RACE vaade jagab nulliga);
  * muudetud väärtus jääb, teine nihkub kaasa */
 static void fix_shift(const void *changed)

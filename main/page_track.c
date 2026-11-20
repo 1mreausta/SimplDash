@@ -212,9 +212,9 @@ static void create(lv_obj_t *scr)
 
     /* nupud */
     const int bw = (W - 12 - x - 2 * 8) / 3, by = 512, bh = 76;
-    p.b_start = dash_button(scr, "MÄRGI START", x, by, bw, bh, on_start);
-    p.b_sect = dash_button(scr, "SEKTORID", x + bw + 8, by, bw, bh, on_sect);
-    p.b_auto = dash_button(scr, "AUTO", x + 2 * (bw + 8), by, bw, bh, on_auto);
+    p.b_start = dash_button(scr, "MÄRGI START", x, by, bw, bh, on_start, NULL);
+    p.b_sect = dash_button(scr, "SEKTORID", x + bw + 8, by, bw, bh, on_sect, NULL);
+    p.b_auto = dash_button(scr, "AUTO", x + 2 * (bw + 8), by, bw, bh, on_auto, NULL);
     for (int i = 0; i < 3; i++) {
         lv_obj_t *b = i == 0 ? p.b_start : i == 1 ? p.b_sect : p.b_auto;
         lv_obj_set_style_text_font(lv_obj_get_child(b, 0), dash_font(20), 0);

@@ -13,6 +13,7 @@
 #include "maxxecu.h"
 #include "settings.h"
 #include "stats.h"
+#include "web_api.h"
 #include "store.h"
 #include <stdlib.h>
 #include <unistd.h>
@@ -155,6 +156,23 @@ static void test_store_grow(void)
     unsetenv("SIMPLDASH_DATA");
 }
 
+/* veebi sisend: vigane läbisõit ja tühi Wi-Fi nimi lükatakse tagasi */
+static void test_web_input(void)
+{
+    static web_resp_t r;
+    stats_set_odo_km(100);
+    const char *bad[] = { "/api/odo?km=nan", "/api/odo?km=-5", "/api/odo?km=1e400", "/api/set?key=wifi_ssid&val=" };
+    for (int i = 0; i < 4; i++) {
+        web_api_handle(bad[i], &r);
+        CHECK(strstr(r.body, "\"ok\":false") != NULL);
+    }
+    CHECK(fabs(stats_get()->odo_m - 100000) < 1 && g_set.wifi_ssid[0]);
+    web_api_handle("/api/odo?km=1234", &r);
+    CHECK(strstr(r.body, "\"ok\":true") && fabs(stats_get()->odo_m - 1234000) < 1);
+    web_api_handle("/api/status", &r);
+    CHECK(!strstr(r.body, "nan") && !strstr(r.body, "inf"));
+}
+
 static uint32_t tick(void) { return (uint32_t)(g_fake_time_us / 1000); }
 static void flush(lv_display_t *d, const lv_area_t *a, uint8_t *p) { (void)a; (void)p; lv_display_flush_ready(d); }
 
@@ -174,6 +192,7 @@ int main(void)
     test_settings_input();
     test_text_cache();
     test_store_grow();
+    test_web_input();
     puts(fails ? "TESTID EBAÕNNESTUSID" : "kõik testid OK");
     return fails != 0;
 }

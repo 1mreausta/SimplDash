@@ -55,21 +55,12 @@ static void bubble(lv_obj_t *o)
     lv_obj_set_event_bubble(o, true);
 }
 
+/* dash_button, aga heledam taust ja suurem kiri */
 static lv_obj_t *button(lv_obj_t *parent, const char *txt, int w, int h, lv_event_cb_t cb, void *ud)
 {
-    lv_obj_t *b = lv_button_create(parent);
-    lv_obj_remove_style_all(b);
-    lv_obj_set_size(b, w, h);
+    lv_obj_t *b = dash_button(parent, txt, 0, 0, w, h, cb, ud);
     lv_obj_set_style_bg_color(b, lv_color_hex(0x151A21), 0);
-    lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
-    lv_obj_set_style_bg_color(b, C_ACCENT, LV_STATE_PRESSED);
-    lv_obj_set_style_border_color(b, C_LINE, 0);
-    lv_obj_set_style_border_width(b, 2, 0);
-    lv_obj_set_style_radius(b, 8, 0);
-    lv_obj_t *l = dash_label(b, 26, C_TEXT, txt);
-    lv_obj_center(l);
-    lv_obj_add_event_cb(b, cb, LV_EVENT_CLICKED, ud);
-    bubble(b);
+    lv_obj_set_style_text_font(lv_obj_get_child(b, 0), dash_font(26), 0);
     return b;
 }
 
@@ -437,16 +428,16 @@ static void update_trip(const dash_state_t *s)
     dash_set_text_if(p.trip[2], p.t_trip[2], 32, b);
     snprintf(b, sizeof(b), "%.1f L", st->trip_fuel_l);
     dash_set_text_if(p.trip[3], p.t_trip[3], 32, b);
-    if (st->trip_m > 1000) snprintf(b, sizeof(b), "%.1f L/100km", st->trip_fuel_l / (st->trip_m / 100000));
+    float avg = stats_trip_avg();
+    if (avg >= 0) snprintf(b, sizeof(b), "%.1f L/100km", avg);
     else snprintf(b, sizeof(b), "--");
     dash_set_text_if(p.trip[4], p.t_trip[4], 32, b);
     fmt_hms(st->trip_s, b, sizeof(b));
     dash_set_text_if(p.trip[5], p.t_trip[5], 32, b);
-    float lph = stats_fuel_lph(s);
-    float spd = s->d.valid[SIG_SPEED] ? s->d.v[SIG_SPEED] : 0;
-    if (lph < 0) snprintf(b, sizeof(b), "--");
-    else if (spd >= 5) snprintf(b, sizeof(b), "%.1f L/100km", lph / spd * 100);
-    else snprintf(b, sizeof(b), "%.1f L/h", lph);
+    bool per_km;
+    float now = stats_fuel_now(s, &per_km);
+    if (now < 0) snprintf(b, sizeof(b), "--");
+    else snprintf(b, sizeof(b), "%.1f %s", now, per_km ? "L/100km" : "L/h");
     dash_set_text_if(p.trip[6], p.t_trip[6], 32, b);
     if (s->d.valid[SIG_FUEL_TANK]) snprintf(b, sizeof(b), "%.1f L", s->d.v[SIG_FUEL_TANK]);
     else snprintf(b, sizeof(b), "--");
