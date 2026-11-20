@@ -1,6 +1,6 @@
 # Muudatused
 
-## Avaldamata
+## v0.4.5 – 2026-11-20
 - Veebilehe odomeeter lükkab vigase väärtuse tagasi (negatiivne, lõpmatu, „nan“ rikkusid veebilehe oleku).
 - Wi-Fi nime ei saa veebilehel tühjaks teha.
 - Veebilehe seadete väärtused on sama täpsusega nagu dashil (nt rõhk 1 komakohaga).
