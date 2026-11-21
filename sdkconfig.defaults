@@ -26,7 +26,7 @@ CONFIG_LV_FONT_MONTSERRAT_14=y
 
 # --- CAN (TWAI) ISR IRAM-is, et välkmälu kirjutamine ei segaks ---
 CONFIG_TWAI_ISR_CACHE_SAFE=y
-# TÄNAV vaate ümmargune kuma (radiaalne gradient)
+# RACE 2 vaate ümmargune kuma (radiaalne gradient)
 CONFIG_LV_GRADIENT_MAX_STOPS=4
 CONFIG_LV_USE_DRAW_SW_COMPLEX_GRADIENTS=y
 

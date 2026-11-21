@@ -1,5 +1,5 @@
 /*
- * Vaade KLASSIKA: 90ndate Jaapani sportauto stiilis osutitega kellad halli paneeli peal.
+ * Vaade ANALOOG: 90ndate Jaapani sportauto stiilis osutitega kellad halli paneeli peal.
  *   vasakul: vee temperatuur (C–H), hetke kütusekulu (L/100km, seistes L/h)
  *   keskel:  spidomeeter (läbimõõdiku aknas kiirus) ja tahhomeeter (kollane/punane tsoon, aknas käik)
  *   paremal: õlirõhk (bar)
@@ -34,6 +34,10 @@ static struct {
     int rev_limit;
     lv_obj_t *ind_demo, *ind_gps;     /* mustad märgutuled spidomeetris */
     int8_t    demo_on, gps_on;
+    dash_lamps_t lamps;               /* tänavarežiim: suunatuled, kaugtuled */
+    lv_obj_t *odo, *odo_txt;          /* tänavarežiim: läbisõidu aken spidomeetris */
+    char      t_odo[20];
+    int8_t    odo_shown;
 } p;
 
 static const char *TACH_TXT[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", NULL };
@@ -278,6 +282,13 @@ static void create(lv_obj_t *scr)
     p.ind_demo = indicator(scr, 410 - 3 - IND_W, bcy + 132, "DEMO");
     p.ind_gps = indicator(scr, 410 + 3, bcy + 132, "GPS");
     p.demo_on = p.gps_on = -1;
+    /* tänavarežiim: läbisõit all kahe suure kella vahel (seal, kus äärised lahknevad) */
+    p.odo = dash_box(scr, 595 - 62, bcy + 168, 124, 32, lv_color_hex(0x0B0C0E), 5);
+    lv_obj_set_style_border_color(p.odo, lv_color_hex(0x3A3F46), 0);
+    lv_obj_set_style_border_width(p.odo, 2, 0);
+    p.odo_txt = dash_label(p.odo, 22, lv_color_hex(0xE9ECEF), "");
+    lv_obj_center(p.odo_txt);
+    lv_obj_set_hidden(p.odo, true);
 
     cg_create(&p.tach, scr, 780, bcy, br, 0, DASH_CLASSIC_RPM_MAX, DASH_CLASSIC_RPM_MAX / 250 + 1, 4,
               TACH_ROT, TACH_SWEEP, TACH_TXT, 40, "x1000 r/min", 64, 0, 0);
@@ -301,6 +312,8 @@ static void create(lv_obj_t *scr)
               "L/100km", 0, SMALL(sr));
     cg_create(&p.oil, scr, W - 10 - (sr + 5), SMALL_CY, sr, 0, DASH_OIL_GAUGE_MAX, DASH_OIL_GAUGE_MAX + 1, 4, 135, 90,
               NULL, 16, "bar", 0, SMALL(sr));
+    /* tänavarežiim: nooled ja kaugtuled üleval kahe suure kella vahel */
+    dash_lamps_create(&p.lamps, scr, 595 - 75 - 22, 595 + 75 - 22, 595 - 22, 82, 34);
 }
 
 static void update(const dash_state_t *s)
@@ -317,6 +330,16 @@ static void update(const dash_state_t *s)
     cg_lcd(&p.spd, buf);
     indicator_set(p.ind_demo, &p.demo_on, demo_is_enabled(), C_YELLOW);
     indicator_set(p.ind_gps, &p.gps_on, s->gps_ok, C_GREEN);
+    dash_lamps_update(&p.lamps, s);
+    if (p.odo_shown != (g_set.road_mode != 0)) {
+        p.odo_shown = g_set.road_mode != 0;
+        lv_obj_set_hidden(p.odo, !p.odo_shown);
+    }
+    if (p.odo_shown) {
+        char o[20];
+        dash_fmt_odo(o, sizeof(o));
+        dash_set_text_if(p.odo_txt, p.t_odo, sizeof(p.t_odo), o);
+    }
 
     cg_set(&p.tach, s->rpm, 20);
     dash_gear_text(s, buf, sizeof(buf));
@@ -337,4 +360,4 @@ static void update(const dash_state_t *s)
     cg_rim(&p.oil, dash_sig_alarm(s, SIG_OIL_PRESS) && s->blink ? 1 : 0);
 }
 
-const dash_page_t page_classic = { "KLASSIKA", 8, create, update, NULL, NULL, -1, 0, -1, 0, -1, 0 };
+const dash_page_t page_classic = { "ANALOOG", 8, create, update, NULL, NULL, -1, 0, -1, 0, -1, 0 };

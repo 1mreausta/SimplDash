@@ -8,6 +8,8 @@
 #include "maxxecu.h"
 #include "settings.h"
 #include "demo.h"
+#include "lamps.h"
+#include "stats.h"
 #include "gps.h"
 int64_t g_fake_time_us = 1000000;
 static bool s_demo;
@@ -75,7 +77,7 @@ static void run(int ms){
 }
 /* hoia vilkumine "sees" faasis ja oota, kuni vaate nime teade kaob */
 static void settle(void){ run(1400); while(((g_fake_time_us/250000)%2)==1) run(5); while(((g_fake_time_us/250000)%2)==0) run(5); run(60); }
-static const char *NAMES[] = { "race", "kellad", "kaar", "tanav", "klassika", "0-100", "ring", "rada", "andmed", "seaded" };
+static const char *NAMES[] = { "race", "tanav", "kiirus", "race2", "analoog", "0-100", "ring", "rada", "andmed", "seaded" };
 _Static_assert(sizeof(NAMES) / sizeof(NAMES[0]) == 10, "vaadete nimed");
 int main(void){
   lv_init(); lv_tick_set_cb(tick);
@@ -137,6 +139,11 @@ int main(void){
     dash_ui_set_page(p); settle();
     snprintf(fn, sizeof(fn), "1_%s.ppm", NAMES[p]); dump(fn);
   }
+  /* tänavarežiim: vasak suunatuli (põleb) + kaugtuled, läbisõit */
+  g_set.road_mode = 1; lamps_set_test(LAMP_LEFT | LAMP_HIGH); stats_set_odo_km(123456);
+  dash_ui_set_page(4); settle(); while ((g_fake_time_us / 333000) % 2) run(5); run(100); dump("4_analoog_tanavareziim.ppm");
+  dash_ui_set_page(1); settle(); while ((g_fake_time_us / 333000) % 2) run(5); run(100); dump("4_tanav_tanavareziim.ppm");
+  g_set.road_mode = 0; lamps_set_test(0);
   /* shift + hoiatus (ribaga; suur täisekraani hoiatus eraldi pildil) */
   v[SIG_RPM]=7600; v[SIG_CLT]=109; v[SIG_GEAR]=4; flags = FLAG_LOGGING|FLAG_KNOCK;
   g_set.alert_full = 1;

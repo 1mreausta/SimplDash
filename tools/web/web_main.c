@@ -9,6 +9,8 @@
 #include <string.h>
 #include "dash_ui.h"
 #include "demo.h"
+#include "lamps.h"
+#include "settings.h"
 #include "lvgl.h"
 #include "maxxecu.h"
 
@@ -81,14 +83,17 @@ EMSCRIPTEN_KEEPALIVE void sim_key(int k)
     case 9: dash_ui_show_boot(); break;
     case 6: dash_ui_set_speed_source((dash_ui_get_speed_source() + 1) % 3); break;
     case 7: demo_set_gps(!demo_is_gps()); break;
+    case 10: lamps_set_test((lamps_test() & LAMP_HIGH) | ((lamps_test() + 1) & 3)); break;
+    case 11: lamps_set_test(lamps_test() ^ LAMP_HIGH); break;
+    case 12: g_set.road_mode = !g_set.road_mode; settings_changed(); break;
     }
 }
 
-/* bitid: 0 demo, 1 CAN, 2 kuum, 3 GPS, 4..7 vaade, 8..15 heledus, 16..17 kiiruse allikas */
+/* bitid: 0 demo, 1 CAN, 2 kuum, 3 GPS, 4..7 vaade, 8..15 heledus, 16..17 kiiruse allikas, 18 knock, 19..21 tuled, 22 tänavarežiim */
 EMSCRIPTEN_KEEPALIVE int sim_state(void)
 {
     return demo_is_enabled() | (s_can << 1) | (demo_is_overheat() << 2) | (demo_is_gps() << 3) | (s_page << 4) |
-           (s_bright << 8) | (dash_ui_get_speed_source() << 16) | (demo_is_knock() << 18);
+           (s_bright << 8) | (dash_ui_get_speed_source() << 16) | (demo_is_knock() << 18) | (lamps_test() << 19) | (g_set.road_mode << 22);
 }
 
 EMSCRIPTEN_KEEPALIVE uint16_t *sim_fb(void) { return s_fb; }

@@ -42,17 +42,19 @@ Jootekolb, juhtmekoorija, klemmitangid, multimeeter, sülearvuti MTune'iga, USB 
 1. Leia **süütevoolu** juhe (12 V ainult süüde sees, IGN/ACC). Püsiv 12 V tühjendaks seisva auto aku.
 2. 12 V → **kaitse (3 A)** → muunduri **IN+**. Muunduri **IN−** → kere mass (sama punkt või lähedal ECU massile).
 3. Enne plaadi ühendamist: süüde sisse, mõõda muunduri väljundis **5,0–5,2 V**. Süüde välja.
-4. Muunduri **OUT+** → plaadi päise pin **1 (5V)**, **OUT−** → pin **3 (GND)**.
+4. Muunduri **OUT+** → plaadi päise **R1 (5V)**, **OUT−** → **R3 (GND)**.
 
 ### 3.2 CAN moodul plaadile
 | Plaadi päis | → | SN65HVD230 |
 |---|---|---|
-| pin 9 **3V3** | → | **3V3** (mitte 5 V!) |
-| pin 8 **GND** | — | **GND** |
-| pin 7 **GPIO45** (CAN TX) | → | **CTX** (TX / D) |
-| pin 6 **GPIO46** (CAN RX) | ← | **CRX** (RX / R) |
+| R9 **3V3** | → | **3V3** (mitte 5 V!) |
+| R8 **GND** | — | **GND** |
+| R7 **GPIO45** (CAN TX) | → | **CTX** (TX / D) |
+| R6 **GPIO46** (CAN RX) | ← | **CRX** (RX / R) |
 
-Pinnide järjekord: plaadi päise parem tulp ülevalt alla (vt README tabelit).
+R = plaadi päise parem tulp ülevalt alla (R1–R13), vt joonist:
+
+![Päise pinnid](pinout.svg)
 
 ### 3.3 CAN-siin
 1. SN65HVD230 **CANH** → MaxxECU CAN1 **CANH** (hall). **CANL** → MaxxECU CAN1 **CANL** (roosa).

@@ -1,5 +1,5 @@
 /*
- * Vaade KAAR: suur kaartahhomeeter keskel, kiirus ja pöörded selle sees,
+ * Vaade KIIRUS: suur kaartahhomeeter keskel, kiirus ja pöörded selle sees,
  * käik all keskel, 3 + 3 näidikut külgedel.
  */
 #include <math.h>
@@ -174,4 +174,4 @@ static void update(const dash_state_t *s)
     dash_flags_update(&p.flags, s);
 }
 
-const dash_page_t page_sweep = { "KAAR", 44, create, update, NULL, NULL, 938, 4, 16, 4, 856, 4 };
+const dash_page_t page_sweep = { "KIIRUS", 44, create, update, NULL, NULL, 938, 4, 16, 4, 856, 4 };

@@ -159,6 +159,7 @@ int gps_make_cmd(const char *body, char *out, size_t cap)
 #ifndef DASH_HOST
 #include "dash_config.h"
 #include "driver/uart.h"
+#include "driver/gpio.h"
 #include "esp_log.h"
 #include "freertos/task.h"
 #include "sdkconfig.h"
@@ -284,6 +285,7 @@ void gps_start(void)
         ESP_LOGE(TAG, "UART ei käivitunud");
         return;
     }
+    gpio_pullup_en(CONFIG_SIMPLDASH_GPS_RX_GPIO);   /* mooduli puudumisel ei loe õhus rippuv pinn müra */
     xTaskCreate(gps_task, "gps", 4096, NULL, 5, NULL);
     ESP_LOGI(TAG, "GPS: RX GPIO%d, TX GPIO%d", CONFIG_SIMPLDASH_GPS_RX_GPIO, CONFIG_SIMPLDASH_GPS_TX_GPIO);
 #endif

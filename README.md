@@ -11,25 +11,28 @@ rpm-based oil pressure curve, GPS lap timing with live delta, sectors and a trac
 phone (Wi-Fi) settings with over-the-air updates, and buttons that send CAN commands to the ECU. Documentation is in Estonian.*
 
 **Mis sees on:**
-- 10 vaadet (libistades), sh osutitega KLASSIKA ning GPS-iga 0–100, RING ja RADA;
+- 10 vaadet (libistades), sh osutitega ANALOOG ning GPS-iga 0–100, RING ja RADA;
 - hoiatused (riba, punane raam, suur täisekraani hoiatus), õlirõhu miinimum pöörete järgi, KNOCK, hoiatuste logi;
 - GPS 10 Hz: kiirus, kell, 0–100 aeg, ringiajad, vahe parima ringiga, sektorid, raja kaart;
 - sõidulogi SD-kaardile (CSV), läbisõit, mootoritunnid, reisi kütusekulu;
 - seaded ekraanil ja telefonis (Wi-Fi), püsivara uuendus Wi-Fi kaudu;
+- **tänavarežiim:** ANALOOG ja TÄNAV vaates suunatuled, kaugtuled ja läbisõit (tuled otse plaadile, [juhend](docs/tanavareziim.md));
 - MaxxECU lisakanalid ja nupud, mis saadavad ECU-le käske (launch, anti-lag, seade, boost, veojõud);
 - simulaator brauseris ja arvutis – kõike saab proovida ilma plaadita.
 
-| RACE | KELLAD |
+| RACE | TÄNAV |
 |---|---|
-| ![RACE](docs/1_race.png) | ![KELLAD](docs/1_kellad.png) |
-| **KAAR** | **TÄNAV** |
-| ![KAAR](docs/1_kaar.png) | ![TÄNAV](docs/1_tanav.png) |
+| ![RACE](docs/1_race.png) | ![TÄNAV](docs/1_tanav.png) |
+| **KIIRUS** | **RACE 2** |
+| ![KIIRUS](docs/1_kiirus.png) | ![RACE 2](docs/1_race2.png) |
 | **0–100** (GPS) | **RING** (GPS) |
 | ![0–100](docs/1_0-100.png) | ![RING](docs/1_ring.png) |
-| **KLASSIKA** | **ANDMED** |
-| ![KLASSIKA](docs/1_klassika.png) | ![ANDMED](docs/1_andmed.png) |
+| **ANALOOG** | **ANDMED** |
+| ![ANALOOG](docs/1_analoog.png) | ![ANDMED](docs/1_andmed.png) |
 | **RADA** (GPS) | **SEADED** (ECU nupud, seaded, sõit, hoiatused) |
 | ![RADA](docs/1_rada.png) | ![SEADED](docs/1_seaded.png) |
+| **ANALOOG** (tänavarežiim) | **TÄNAV** (tänavarežiim) |
+| ![ANALOOG tänavarežiimis](docs/4_analoog_tanavareziim.png) | ![TÄNAV tänavarežiimis](docs/4_tanav_tanavareziim.png) |
 | **Suur hoiatus** | |
 | ![Suur hoiatus](docs/2_suur_hoiatus.png) | |
 
@@ -38,33 +41,48 @@ Käivitub umbes sekundiga; väljalülitamisel pole midagi, mis võiks rikki minn
 
 ## Ühendused
 
-Plaadi päis, parem tulp (ülevalt alla):
+Põhjalikumad juhendid:
+- [MaxxECU CAN → SimplDash: ühendamise juhend](docs/CAN-uhendus.md) – ostunimekiri, ühendamine samm-sammult, MTune, kontroll.
+- [Tänavarežiim: suunatuled, kaugtuled ja läbisõit](docs/tanavareziim.md) – optron, ühendamine, pinnid ([PC817 plaadi ühenduste joonis](docs/pc817-uhendus.svg)).
+- [Nissan R33 Skyline GTS-t: originaal näidikupaneeli eemaldamine](docs/R33-GTS-t.md) – laadimine, kiiruse signaal, kütusepaak, ülevaatus.
 
-| Pin | Signaal | Ühendus |
-|---|---|---|
-| 1 | 5V | ← muunduri 5 V |
-| 2 | 5V | – |
-| 3 | GND | ← muunduri GND |
-| 4 | NC | – |
-| 5 | GPIO47 | vaate nupp (valikuline): nupp GPIO47 ja GND vahele |
-| 6 | **GPIO46** (CAN RX) | ← SN65HVD230 **CRX** |
-| 7 | **GPIO45** (CAN TX) | → SN65HVD230 **CTX** |
-| 8 | GND | — SN65HVD230 **GND** |
-| 9 | **3V3** | → SN65HVD230 **3V3** (mitte 5 V!) |
+![JC1060P470C päis ja SimplDashi ühendused](docs/pinout.svg)
+
+Plaadi päis (2 × 13 pinni). Vasak tulp ülevalt alla on L1–L13, parem tulp R1–R13, nagu joonisel:
+
+| Pin | Signaal | Ühendus | |
+|---|---|---|---|
+| R1 | 5V | ← 12→5 V muunduri OUT+ | **toide** |
+| R3 | GND | ← 12→5 V muunduri OUT− | **toide** |
+| R6 | **GPIO46** (CAN RX) | ← SN65HVD230 **CRX** | **CAN** |
+| R7 | **GPIO45** (CAN TX) | → SN65HVD230 **CTX** | **CAN** |
+| R8 | GND | — SN65HVD230 **GND** | **CAN** |
+| R9 | **3V3** | → SN65HVD230 **3V3** (mitte 5 V!) | **CAN** |
+| R5 | GPIO47 | vaate nupp: nupp GPIO47 ja GND vahele | valikuline |
+| R2 | 5V | → GPS mooduli VCC | valikuline: [GPS](#gps-valikuline) |
+| L10 | GPIO32 | ← GPS mooduli **TX** | valikuline: GPS |
+| L11 | GPIO33 | → GPS mooduli **RX** (10 Hz seadistus) | valikuline: GPS |
+| L3 | GND | — PC817 plaadi väljundi G ja GPS-i GND | valikuline: [tänavarežiim](docs/tanavareziim.md) |
+| L5 | GPIO2 | ← vasak suunatuli (PC817 plaadi V1) | valikuline: tänavarežiim |
+| L6 | GPIO3 | ← parem suunatuli (PC817 plaadi V2) | valikuline: tänavarežiim |
+| L7 | GPIO4 | ← kaugtuled (PC817 plaadi V3) | valikuline: tänavarežiim |
+
+Vabad: GPIO1 (L4), GPIO5 (L8), 3V3 (L1, L2). **Ära kasuta:** GPIO20 (heli võimendi), I2C_SDA/SCL (puuteekraan), C6_* (Wi-Fi kiip), NC.
 
 SN65HVD230 teine pool: **CANH** → MaxxECU **hall** juhe, **CANL** → MaxxECU **roosa** juhe.
 Plaadi GND peab olema ühendatud ka auto/ECU massiga (muunduri kaudu).
 
-Toide: 12 V → 5 V muundur (≥ 2 A, auto/24 V sisendiga) → päise 5V/GND.
+Toide: 12 V süütevool → kaitse 3 A → 12 V → 5 V muundur (≥ 2 A, auto/24 V sisendiga) → päise 5V/GND.
 
-Lisaks (valikulised): **GPS moodul** (vt [GPS](#gps-valikuline)) ja **microSD-kaart** plaadi TF-pesas
-(vt [SD-kaart](#sd-kaart-sõidulogi)). Wi-Fi on plaadil olemas (ESP32-C6), juhtmeid pole vaja.
+> ⚠ Auto 12 V signaali (suunatuled, kaugtuled) **ei tohi** ühendada otse GPIO-sse – plaat talub 3,3 V.
+> Vahele käib optron (4-kanaliline PC817 plaat, ostetakse eraldi), vt [tänavarežiim](docs/tanavareziim.md).
 
-> GPIO45/46 on valitud riistvara planeerimisel (plaadi päisest välja toodud ja plaaditugi neid
-> ei kasuta). Kui muudad ühendusi, muuda ka tarkvaras:
-> `idf.py menuconfig` → **SimplDash** → CAN TX/RX GPIO.
+**microSD-kaart** käib plaadi TF-pessa (vt [SD-kaart](#sd-kaart-sõidulogi)). Wi-Fi on plaadil olemas (ESP32-C6), juhtmeid pole vaja.
+
+> Pinnid on vaikimisi juba seadistatud nagu tabelis. Kui muudad ühendusi, muuda ka tarkvaras:
+> `idf.py menuconfig` → **SimplDash** (CAN, vaate nupp, GPS, suunatuled, kaugtuled; `-1` = pole ühendatud).
 >
-> Kasutusel (ära vali): 0, 6–19, 23, 26–31, 34, 35, 39–44, 48–54.
+> Plaadil kasutusel (ära vali): 0, 6–20, 23, 26–31, 34, 35, 39–44, 48–54.
 
 **Terminaator:** MaxxECU CAN1-l on 120 Ω sees. Paljudel SN65HVD230 moodulitel on samuti
 120 Ω peal – nii on buss mõlemast otsast lõpetatud. Mõõda CANH–CANL vahel (toide väljas): ~60 Ω = õige.
@@ -85,7 +103,7 @@ Iga [reliisi](https://github.com/1mreausta/SimplDash/releases) juures on kaks fa
   Flash Address `0x0`, vali fail `simpldash-vX.Y.bin` → Program; või
 - **käsurealt:** `pip install esptool`, siis
   ```bash
-  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.4.6.bin
+  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.5.bin
   ```
 
 > **v0.3 või vanemalt v0.4-le: kindlasti USB kaudu, terve fail aadressile 0x0.** Versioonis 0.4 muutus välkmälu
@@ -128,10 +146,11 @@ Nt **Ebyte E108-GN04G-TTL** (TTL-variant, mitte -232/-485): toide 5 V, andmed 3,
 |---|---|
 | VCC | 5V |
 | GND | GND |
-| TX | vaba GPIO → `SIMPLDASH_GPS_RX_GPIO` |
-| RX (valikuline) | vaba GPIO → `SIMPLDASH_GPS_TX_GPIO` |
+| TX | GPIO32 (L10) → `SIMPLDASH_GPS_RX_GPIO` |
+| RX (valikuline) | GPIO33 (L11) → `SIMPLDASH_GPS_TX_GPIO` |
 
-Pinnid ja kiirus (vaikimisi 38400): `idf.py menuconfig` → SimplDash. Vaikimisi on GPS väljas (`-1`).
+Pinnid ja kiirus (vaikimisi 38400): `idf.py menuconfig` → SimplDash. Kui GPS-i pole ühendatud, ei juhtu midagi –
+GPS-i vaated ja ikoon tulevad nähtavale alles siis, kui moodul saadab andmeid. GPS-i välja lülitamiseks: RX GPIO = `-1`.
 
 **10 Hz:** ühenda ka mooduli **RX** juhe (`SIMPLDASH_GPS_TX_GPIO`). Siis seadistab dash mooduli igal käivitusel:
 UART 115200 baudi, ainult RMC + GGA laused ja uuendussagedus `DASH_GPS_RATE_HZ` (vaikimisi 10 Hz).
@@ -172,7 +191,7 @@ Simulaatoris: nupud **GPS ühendatud** (G) ja **Kiirus: AUTO/ECU/GPS** (S); demo
 - **Süüte sisselülitamisel** näidatakse 2 s SimplDashi logo; shift-light'id süttivad järjest (tulede test) ja
   dash heleneb nähtavale samamoodi nagu vaadete vahetusel (`DASH_BOOT_MS`, 0 = kohe dash).
   Logo pilt tehakse fondist: `python3 tools/logo/make_boot_logo.py` → `main/boot_logo.c`.
-- **Libista vasakule / paremale** – järgmine / eelmine vaade (RACE → KELLAD → KAAR → TÄNAV → KLASSIKA → ANDMED → SEADED;
+- **Libista vasakule / paremale** – järgmine / eelmine vaade (RACE → TÄNAV → KIIRUS → RACE 2 → ANALOOG → ANDMED → SEADED;
   GPS-iga lisaks 0–100, RING ja RADA). Vaateid saab peita: SEADED → VAATED.
   Vahetus on sujuv (tumeneb ja heleneb, 0,3 s – `DASH_PAGE_FADE_MS`, 0 = kohe). Vaate nimi näidatakse hetkeks all keskel; viimane vaade jäetakse meelde ka pärast väljalülitamist.
 - **Füüsiline nupp** (valikuline, nt roolil) – järgmine vaade. Nupp GPIO ja GND vahele,
@@ -306,15 +325,16 @@ saatmine ei õnnestu (nt CAN on listen-only režiimis). Nuppe ja baite saab muut
 
 ## Seadistamine
 Kõik näidikud, hoiatuspiirid, shift-lightid ja iga vaate näidikud:
-[`main/dash_config.h`](main/dash_config.h) (`DASH_TILES_*` = RACE, `DASH_GAUGES_*` = KELLAD,
-`DASH_SWEEP_*` = KAAR, `DASH_STREET_*` = TÄNAV, `DASH_CLASSIC_*` / `DASH_INJ_CC_MIN` / `DASH_CYLINDERS` = KLASSIKA,
+[`main/dash_config.h`](main/dash_config.h) (`DASH_TILES_*` = RACE, `DASH_GAUGES_*` = TÄNAV,
+`DASH_SWEEP_*` = KIIRUS, `DASH_STREET_*` = RACE 2, `DASH_CLASSIC_*` / `DASH_INJ_CC_MIN` / `DASH_CYLINDERS` = ANALOOG,
 `DASH_DATA_ROWS` = ANDMED).
 Suur osa seadeid (piirid, õlirõhu kõver, shift-light, pihustid, ühikud °C/°F ja bar/psi, ajavöönd, logimine,
 Wi-Fi, vaadete peitmine) on muudetavad ka ekraanil (**SEADED**) ja telefonist – siis pole vaja püsivara
 uuesti laadida. `dash_config.h` väärtused on vaikeväärtused (SEADED → telefonis *Vaikeseaded* taastab need).
-Ühikud (°F, psi) kehtivad numbritele ja ribadele; osutitega kellade skaalad (KLASSIKA, KELLAD kaared)
+Ühikud (°F, psi) kehtivad numbritele ja ribadele; osutitega kellade skaalad (ANALOOG, TÄNAV kaared)
 jäävad alati meetrilisteks (°C, bar, km/h).
-CAN-pinnid, bitikiirus, listen-only: `idf.py menuconfig` → SimplDash.
+CAN-pinnid, bitikiirus, listen-only, suunatulede ja kaugtulede pinnid: `idf.py menuconfig` → SimplDash.
+Režiim AINULT RADA / TÄNAV: SEADED → VAATED → Režiim (vt [tänavarežiim](docs/tanavareziim.md)).
 
 ## Simulaator arvutis (interaktiivne, ilma plaadita)
 ```bash
@@ -323,7 +343,8 @@ tools/sim/run.sh              # siis ava brauseris http://localhost:8090
 Sama C-kood (kõik vaated, dekooder, demo sõidumudel) jookseb Macis ja ekraan on brauseris.
 - **hiir = puuteekraan:** libista vaadete vahel, klõps = heledus, hoia 3 s = demo
 - **nupud / klahvid:** ← → vaade · **D** demo sõit · **C** katkesta CAN (näed „ECU ÜHENDUS PUUDUB“) ·
-  **H** vesi kuumeneb üle (näed hoiatust) · **K** knock (suur hoiatus) · **B** käivitusekraan (näidatakse ka lehe avamisel)
+  **H** vesi kuumeneb üle (näed hoiatust) · **K** knock (suur hoiatus) · **B** käivitusekraan (näidatakse ka lehe avamisel) ·
+  **T** suunatuli (väljas → vasak → parem → ohutuled) · **L** kaugtuled · **M** režiim AINULT RADA / TÄNAV
 - **telefoni veebileht:** http://localhost:8090/web (sama mis plaadil Wi-Fi kaudu)
 - seaded, läbisõit ja hoiatuste logi jäävad meelde kaustas `tools/sim/data/`, „SD-kaardi“ logifailid on
   `tools/sim/data/sdcard/logs/`. Kõik nulli: kustuta kaust `tools/sim/data`.
@@ -369,13 +390,14 @@ Joonistab kõik vaated, ka hoiatusega. Kasutab sama UI koodi – muuda disaini j
 | `main/can_rx.c` | TWAI (CAN) vastuvõtt, bus-off taastamine |
 | `main/dash_ui.c` | vaadete vahetus, puudutused, hoiatused |
 | `main/dash_common.c` | ühised vidinad (näidiku-plaat, olekulipud, fondid) |
-| `main/page_*.c` | vaated: race, gauges (KELLAD), sweep (KAAR), street (TÄNAV), classic (KLASSIKA), accel (0–100), lap (RING), track (RADA), data (ANDMED), settings (SEADED); page_ecu.c = SEADED vaate ECU vahekaart |
+| `main/page_*.c` | vaated: race, gauges (TÄNAV), sweep (KIIRUS), street (RACE 2), classic (ANALOOG), accel (0–100), lap (RING), track (RADA), data (ANDMED), settings (SEADED); page_ecu.c = SEADED vaate ECU vahekaart |
 | `main/settings.c`, `main/store.c` | ekraanil/telefonis muudetavad seaded ja püsimälu (NVS) |
 | `main/alarms.c` | hoiatused, õlirõhu kõver, ECU olekuhoiatused, hoiatuste logi |
 | `main/stats.c` | läbisõit, mootoritunnid, reis ja kütusekulu |
 | `main/logger.c` | sõidulogi SD-kaardile (CSV) |
 | `main/lap_core.c` | ringiajad, sektorid, vahe parima ringiga, raja kuju |
 | `main/diag.c` | diagnostika (CAN ID-d ja sagedused, CAN vead, GPS toorlaused, süsteem) |
+| `main/lamps.c` | suunatulede ja kaugtulede sisendid (GPIO, tänavarežiim) |
 | `main/can_ecu.c` | ECU nupud (SEADED → ECU) → CAN-kaader MaxxECU-le |
 | `main/wifi_web.c`, `main/web_api.c` | Wi-Fi pääsupunkt, veebileht, püsivara uuendus |
 | `tools/webpage/` | telefoni veebilehe HTML (`gen.py` → `main/web_page.c`) |

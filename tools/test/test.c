@@ -14,6 +14,7 @@
 #include "settings.h"
 #include "stats.h"
 #include "web_api.h"
+#include "lamps.h"
 #include "store.h"
 #include <stdlib.h>
 #include <unistd.h>
@@ -157,6 +158,28 @@ static void test_store_grow(void)
 }
 
 /* veebi sisend: vigane läbisõit ja tühi Wi-Fi nimi lükatakse tagasi */
+static void test_road_mode(void)
+{
+    static web_resp_t r;
+    char b[20];
+    stats_set_odo_km(123456.7);
+    dash_fmt_odo(b, sizeof(b));
+    CHECK(!strcmp(b, "123 456 km"));
+    stats_set_odo_km(1005);
+    dash_fmt_odo(b, sizeof(b));
+    CHECK(!strcmp(b, "1 005 km"));
+    stats_set_odo_km(42);
+    dash_fmt_odo(b, sizeof(b));
+    CHECK(!strcmp(b, "42 km"));
+    web_api_handle("/api/set?key=road&val=1", &r);            /* veebilehelt TÄNAV */
+    CHECK(g_set.road_mode == 1);
+    g_set.road_mode = 0;
+    lamps_set_test(LAMP_HIGH);                                 /* kaugtuled põlevad pidevalt */
+    CHECK(lamps_get() == LAMP_HIGH);
+    lamps_set_test(0);
+    CHECK(lamps_get() == 0);
+}
+
 static void test_web_input(void)
 {
     static web_resp_t r;
@@ -193,6 +216,7 @@ int main(void)
     test_text_cache();
     test_store_grow();
     test_web_input();
+    test_road_mode();
     puts(fails ? "TESTID EBAÕNNESTUSID" : "kõik testid OK");
     return fails != 0;
 }

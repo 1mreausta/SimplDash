@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Teeb KLASSIKA vaate osutite pildid: main/needles.c (LVGL ARGB8888) ja main/needles.h.
+Teeb ANALOOG vaate osutite pildid: main/needles.c (LVGL ARGB8888) ja main/needles.h.
 
 Kuju nagu 90ndate Jaapani sportauto kellades: punane, koonusjas, lühike "saba" üle telje,
 pealt heledam ja alt tumedam (3D), pehmed servad. Pilt osutab paremale; telg on punktis

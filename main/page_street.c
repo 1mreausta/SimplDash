@@ -1,5 +1,5 @@
 /*
- * Vaade TÄNAV: vasakult üles kaarduv astmeline tahhomeeter, kiirus paremal üleval,
+ * Vaade RACE 2: vasakult üles kaarduv astmeline tahhomeeter, kiirus paremal üleval,
  * suur käik sinises kumas, sinine joon "sälguga", all segmentribad ja 6 väärtust.
  */
 #include <math.h>
@@ -308,4 +308,4 @@ static void update(const dash_state_t *s)
     dash_flags_update(&p.flags, s);
 }
 
-const dash_page_t page_street = { "TÄNAV", 400, create, update, NULL, NULL, 938, 4, 16, 4, 856, 4 };
+const dash_page_t page_street = { "RACE 2", 400, create, update, NULL, NULL, 938, 4, 16, 4, 856, 4 };

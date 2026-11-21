@@ -106,10 +106,10 @@ typedef struct {
  * Vaheta: libista ekraanil vasakule/paremale või vajuta lisanuppu
  * (idf.py menuconfig → SimplDash → vaate nupu GPIO). Viimane vaade jäetakse meelde.
  *   0 RACE    – shift lightid, segmenttahhomeeter, 14 näidikut
- *   1 KELLAD  – kaks ümarat kella (pöörded + kiirus), keskel põhinäidud
- *   2 KAAR    – suur kaartahhomeeter, kiirus keskel, 6 näidikut külgedel
- *   3 TÄNAV   – kaardus astmeline tahhomeeter, suur käik sinises kumas, segmentribad
- *   4 KLASSIKA – osutitega kellad: vesi, kütusekulu | spido, tahho | õlirõhk
+ *   1 TÄNAV   – kaks ümarat kella (pöörded + kiirus), keskel põhinäidud
+ *   2 KIIRUS  – suur kaartahhomeeter, kiirus keskel, 6 näidikut külgedel
+ *   3 RACE 2  – kaardus astmeline tahhomeeter, suur käik sinises kumas, segmentribad
+ *   4 ANALOOG – osutitega kellad: vesi, kütusekulu | spido, tahho | õlirõhk
  *   5 0–100   – kiirendusaeg (ainult GPS-iga)
  *   6 RING    – ringiaja taimer, vahe parimaga, sektorid (ainult GPS-iga)
  *   7 RADA    – raja kaart ja sektorite tabel (ainult GPS-iga)
@@ -121,14 +121,14 @@ typedef struct {
 #define DASH_PAGE_FADE_MS  300   /* vaate vahetuse üleminek (tumeneb + heleneb), 0 = kohe */
 #define DASH_SPEED_MAX  260
 
-/* KLASSIKA: hetke kütusekulu arvutatakse pihustite töötsüklist (MaxxECU ei saada kulu otse):
+/* ANALOOG: hetke kütusekulu arvutatakse pihustite töötsüklist (MaxxECU ei saada kulu otse):
  * L/h = pihusti cc/min × silindreid × duty% × 60 / 1000;  L/100km = L/h / kiirus × 100 */
 #define DASH_INJ_CC_MIN     630     /* ühe pihusti vooluhulk (cc/min, kütuse rõhul) */
 #define DASH_CYLINDERS      6       /* RB25DET: 2,5 L, 6 silindrit */
 #define DASH_FUEL_GAUGE_MAX 30      /* kütusekulu kella skaala lõpp (L/100km) */
-#define DASH_CLASSIC_SPEED_MAX 320  /* KLASSIKA spidomeetri skaala lõpp (km/h) */
-#define DASH_CLASSIC_RPM_MAX 11000 /* KLASSIKA tahhomeetri skaala lõpp (rpm), nagu originaalis */
-#define DASH_OIL_GAUGE_MAX  8       /* KLASSIKA õlirõhu kella skaala lõpp (bar) */
+#define DASH_CLASSIC_SPEED_MAX 320  /* ANALOOG spidomeetri skaala lõpp (km/h) */
+#define DASH_CLASSIC_RPM_MAX 11000 /* ANALOOG tahhomeetri skaala lõpp (rpm), nagu originaalis */
+#define DASH_OIL_GAUGE_MAX  8       /* ANALOOG õlirõhu kella skaala lõpp (bar) */
 
 /* --- GPS ---------------------------------------------------------------
  * Kiiruse allikas: ECU (rattakiirus MaxxECU-st), GPS või AUTO (GPS, kui satelliidid
@@ -143,6 +143,11 @@ typedef struct {
  * uuendussagedus ja UART kiirus. 10 Hz vajab kiiremat UART-i kui vaikimisi 38400. */
 #define DASH_GPS_RATE_HZ      10
 #define DASH_GPS_FAST_BAUD    115200
+
+/* --- Tänavarežiim (SEADED → VAATED → Režiim) ----------------------------------------
+ * TÄNAV: ANALOOG ja TÄNAV vaates suunatuled, kaugtuled ja läbisõit. Tuled tulevad otse plaadi
+ * GPIO-desse optroni kaudu (menuconfig → SimplDash), vt docs/tanavareziim.md. */
+#define DASH_ROAD_MODE        0       /* vaikimisi: 0 = AINULT RADA, 1 = TÄNAV */
 
 /* Kell (GPS-ist, näidatakse ainult kui GPS on ühendatud): Eesti aeg */
 #define DASH_TZ_OFFSET_MIN    120     /* UTC+2 */
@@ -170,9 +175,9 @@ typedef struct {
 
 /* Ringiaeg: start/finiš joone laius (m) ja lühim võimalik ring (s) */
 #define DASH_LAP_GATE_M       25.0f
-#define DASH_LAP_MIN_S        10.0f    /* KELLAD vaate spidomeetri skaala lõpp (km/h) */
+#define DASH_LAP_MIN_S        10.0f    /* TÄNAV vaate spidomeetri skaala lõpp (km/h) */
 
-/* KELLAD: keskmine tulp (5 tk) */
+/* TÄNAV: keskmine tulp (5 tk) */
 #define DASH_GAUGES_CENTER { \
     { SIG_OIL_PRESS,  "ÕLI",   "bar", 1, 0.01f, 0, 7 }, \
     { SIG_FUEL_PRESS, "KÜTUS", "bar", 1, 0.01f, 0, 6 }, \
@@ -180,10 +185,10 @@ typedef struct {
     { SIG_BATT,       "AKU",   "V",   1, 1.0f, 10, 15 }, \
     { SIG_IAT,        "IAT",   "°C",  0, 1.0f,  0, 80 }, \
 }
-/* KELLAD: vertikaalsed ribad kellade kõrval (vasak, parem) */
+/* TÄNAV: vertikaalsed ribad kellade kõrval (vasak, parem) */
 #define DASH_GAUGES_BAR_LEFT   { SIG_CLT,       "VESI",  "°C", 0, 1.0f, 40, 120 }
 #define DASH_GAUGES_BAR_RIGHT  { SIG_FUEL_TANK, "PAAK",  "L",  0, 1.0f, 0,  60  }
-/* KELLAD: alumine rida (4 tk) */
+/* TÄNAV: alumine rida (4 tk) */
 #define DASH_GAUGES_BOTTOM { \
     { SIG_OIL_TEMP,  "ÕLI TEMP",  "°C", 0, 1.0f, 0, 0 }, \
     { SIG_EGT_MAX,   "EGT MAX",   "°C", 0, 1.0f, 0, 0 }, \
@@ -191,7 +196,7 @@ typedef struct {
     { SIG_FUEL_DUTY, "INJ. DUTY", "%",  0, 1.0f, 0, 0 }, \
 }
 
-/* KAAR: külgede näidikud (3 + 3) */
+/* KIIRUS: külgede näidikud (3 + 3) */
 #define DASH_SWEEP_LEFT { \
     { SIG_OIL_PRESS, "ÕLI RÕHK", "bar", 1, 0.01f, 0, 7 }, \
     { SIG_OIL_TEMP,  "ÕLI TEMP", "°C",  0, 1.0f, 40, 150 }, \
@@ -203,7 +208,7 @@ typedef struct {
     { SIG_CLT,       "VESI",    "°C",  0, 1.0f, 40, 120 }, \
 }
 
-/* TÄNAV: keskmine ruudustik (2 rida × 3) */
+/* RACE 2: keskmine ruudustik (2 rida × 3) */
 #define DASH_STREET_GRID { \
     { SIG_BATT,       "AKU",         "V",   1, 1.0f,  0, 0 }, \
     { SIG_IAT,        "SISSELASE",   "°C",  0, 1.0f,  0, 0 }, \
@@ -212,7 +217,7 @@ typedef struct {
     { SIG_OIL_PRESS,  "ÕLI RÕHK",    "bar", 1, 0.01f, 0, 0 }, \
     { SIG_TPS,        "TPS",         "%",   0, 1.0f,  0, 0 }, \
 }
-/* TÄNAV: segmentribad (vasakul 2, paremal 1). bar_min/bar_max = skaala */
+/* RACE 2: segmentribad (vasakul 2, paremal 1). bar_min/bar_max = skaala */
 #define DASH_STREET_STACK_L1 { SIG_CLT,       "VESI", "°C",  0, 1.0f, 40, 120 }
 #define DASH_STREET_STACK_L2 { SIG_OIL_TEMP,  "ÕLI",  "°C",  0, 1.0f, 40, 150 }
 #define DASH_STREET_STACK_R  { SIG_BOOST_BAR, "ÜLERÕHK", "bar", 2, 1.0f, -1, 2 }

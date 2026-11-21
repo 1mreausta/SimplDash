@@ -55,6 +55,7 @@ static void defaults(dash_settings_t *c)
     snprintf(c->wifi_ssid, sizeof(c->wifi_ssid), "%s", DASH_WIFI_SSID);
     snprintf(c->wifi_pass, sizeof(c->wifi_pass), "%s", DASH_WIFI_PASS);
     c->can_tx_on = DASH_CAN_TX_ON;
+    c->road_mode = DASH_ROAD_MODE;
 }
 
 void settings_set_pages(const char *const *names, int n)
@@ -124,6 +125,7 @@ static const char *const TEMPU[] = { "°C", "°F" };
 static const char *const PRESSU[] = { "bar", "psi" };
 static const char *const SPEEDSRC[] = { "ECU", "GPS", "AUTO" };
 static const char *const LOGM[] = { "VÄLJAS", "MOOTOR TÖÖTAB", "ALATI" };
+static const char *const ROADM[] = { "AINULT RADA", "TÄNAV" };
 
 static unit_kind_t kind_of(sig_id_t sig)
 {
@@ -199,8 +201,9 @@ static void build(void)
     it->restart = true;
     head("ECU JUHTIMINE");
     eval("can_tx", "Nupud saadavad ECU-le", &g_set.can_tx_on, OFFON, 2);
+    head("VAATED");
+    eval("road", "Režiim", &g_set.road_mode, ROADM, 2);
     if (s_page_names) {
-        head("VAATED");
         for (int i = 0; i < s_n_pages && i < 16; i++) {
             if (!strcmp(s_page_names[i], "SEADED")) continue;   /* SEADED ei saa peita */
             char key[24];

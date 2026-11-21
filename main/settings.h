@@ -41,10 +41,12 @@ typedef struct {
     char     wifi_pass[65];
     /* CAN: dash saadab ECU-le nuppude kaadri */
     int8_t   can_tx_on;
+    /* 0 = AINULT RADA, 1 = TÄNAV (suunatuled, kaugtuled, läbisõit ANALOOG ja TÄNAV vaates) */
+    int8_t   road_mode;
     /* UUED VÄLJAD SIIA (lõppu) ja uuenda SET_DATA_END */
 } dash_settings_t;
 /* salvestatakse ilma lõpu täitebaitideta, et järgmise versiooni uus väli ei satuks vanade täitebaitide kohale */
-#define SET_DATA_END (offsetof(dash_settings_t, can_tx_on) + sizeof(int8_t))
+#define SET_DATA_END (offsetof(dash_settings_t, road_mode) + sizeof(int8_t))
 
 extern dash_settings_t g_set;
 

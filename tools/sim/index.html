@@ -31,6 +31,8 @@
   @media (max-height: 560px) { .help { display:none; } h1 img { height:30px; } }
   @media (hover: none) { kbd { display:none; } }
   @media (max-width: 520px) { h1 { font-size:13px; } h1 img { height:30px; } button { padding:6px 10px; font-size:14px; } }
+  /* telefonis: ekraan täislaiuses, nupud mitmes reas, leht kerib */
+  @media (max-width: 760px) { body { height:auto; overflow:auto; } .stage { flex:none; } }
   #status { color:var(--dim); font-size:13px; min-height:1.4em; }
 </style>
 </head>
@@ -43,12 +45,15 @@
   <button id="demo">Demo sõit<kbd>D</kbd></button>
   <button id="can">CAN ühendus<kbd>C</kbd></button>
   <button id="gps">GPS ühendatud<kbd>G</kbd></button>
+  <button id="src">Kiirus: AUTO<kbd>S</kbd></button>
 </div>
 <div class="bar">
-  <button id="src">Kiirus: AUTO<kbd>S</kbd></button>
   <button id="hot">Vesi kuumeneb üle<kbd>H</kbd></button>
   <button id="knock">Knock<kbd>K</kbd></button>
   <button id="boot">Käivitusekraan<kbd>B</kbd></button>
+  <button id="turn">Suunatuli: väljas<kbd>T</kbd></button>
+  <button id="high">Kaugtuled<kbd>L</kbd></button>
+  <button id="road">Režiim: AINULT RADA<kbd>M</kbd></button>
 </div>
 <div id="status">ühendan…</div>
 <div class="help" data-mode="http">Hiir = puuteekraan: <b>libista</b> vasakule/paremale = vaade · <b>klõps</b> = heledus ·
@@ -63,7 +68,7 @@ for (const el of document.querySelectorAll('[data-mode]')) if (el.dataset.mode !
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 const img = ctx.createImageData(1024, 600), px = new Uint32Array(img.data.buffer);
 const st = document.getElementById('status');
-const PAGES = ['RACE', 'KELLAD', 'KAAR', 'TÄNAV', 'KLASSIKA', '0–100', 'RING', 'RADA', 'ANDMED', 'SEADED'];
+const PAGES = ['RACE', 'TÄNAV', 'KIIRUS', 'RACE 2', 'ANALOOG', '0–100', 'RING', 'RADA', 'ANDMED', 'SEADED'];
 const SRC = ['ECU', 'GPS', 'AUTO'];
 let fps = 0, frames = 0, last = performance.now();
 
@@ -81,11 +86,15 @@ function blit(s) {
   ctx.putImageData(img, 0, 0);
   frames++;
 }
-/* olek: demo, can, hot, page, gps, src, knock, heledus */
+/* olek: demo, can, hot, page, gps, src, knock, tuled (LAMP_* bitid), heledus */
+const TURN = ['väljas', 'vasak', 'parem', 'ohutuled'];
 function show(o) {
   cv.style.filter = 'brightness(' + (0.25 + 0.75 * o.bright / 100) + ')';
   set('demo', o.demo, 'on'); set('can', o.can, 'on'); set('hot', o.hot, 'alert'); set('knock', o.knock, 'alert');
-  set('gps', o.gps, 'on');
+  set('gps', o.gps, 'on'); set('turn', o.lamps & 3, 'on'); set('high', o.lamps & 4, 'on');
+  document.getElementById('turn').firstChild.nodeValue = 'Suunatuli: ' + TURN[o.lamps & 3];
+  set('road', o.road, 'on');
+  document.getElementById('road').firstChild.nodeValue = 'Režiim: ' + (o.road ? 'TÄNAV' : 'AINULT RADA');
   document.getElementById('src').firstChild.nodeValue = 'Kiirus: ' + SRC[o.src];
   const now = performance.now();
   if (now - last > 1000) { fps = frames; frames = 0; last = now; }
@@ -108,10 +117,10 @@ if (MODE === 'http') {
     try {
       const r = await fetch('/frame?since=' + since);
       since = +r.headers.get('X-Frame');
-      const [demo, can, hot, page, gps, src, knock] = (r.headers.get('X-State') || '0,1,0,0,0,2,0').split(',').map(Number);
+      const [demo, can, hot, page, gps, src, knock, lamps, road] = (r.headers.get('X-State') || '0,1,0,0,0,2,0,0,0').split(',').map(Number);
       const buf = await r.arrayBuffer();
       if (buf.byteLength === 1024 * 600 * 2) blit(new Uint16Array(buf));
-      show({ demo, can, hot, page, gps, src, knock, bright: +r.headers.get('X-Bright') });
+      show({ demo, can, hot, page, gps, src, knock, lamps, road, bright: +r.headers.get('X-Bright') });
     } catch (e) {
       st.textContent = 'simulaator ei vasta – kas tools/sim/run.sh töötab?';
       await new Promise(r => setTimeout(r, 1000));
@@ -120,7 +129,7 @@ if (MODE === 'http') {
   })();
   T.key('boot');   /* lehe avamisel käivitusekraan nagu süüte sisselülitamisel */
 } else {
-  const KEYS = { next: 1, prev: 2, demo: 3, can: 4, hot: 5, src: 6, gps: 7, knock: 8, boot: 9 };
+  const KEYS = { next: 1, prev: 2, demo: 3, can: 4, hot: 5, src: 6, gps: 7, knock: 8, boot: 9, turn: 10, high: 11, road: 12 };
   let lastFrame = 0;
   T = {
     key: k => Module._sim_key && Module._sim_key(KEYS[k]),
@@ -134,7 +143,7 @@ if (MODE === 'http') {
     }
     const s = Module._sim_state();
     show({ demo: s & 1, can: s & 2, hot: s & 4, gps: s & 8, page: (s >> 4) & 15, bright: (s >> 8) & 255,
-           src: (s >> 16) & 3, knock: s & (1 << 18) });
+           src: (s >> 16) & 3, knock: s & (1 << 18), lamps: (s >> 19) & 7, road: s & (1 << 22) });
     requestAnimationFrame(draw);
   }
   window.Module = {
@@ -158,10 +167,10 @@ cv.addEventListener('pointermove', e => { if (down) send(e, 1, true); });
 cv.addEventListener('pointerup', e => { if (down) { down = false; send(e, 0); } });
 cv.addEventListener('pointercancel', e => { if (down) { down = false; send(e, 0); } });
 
-for (const id of ['prev', 'next', 'demo', 'can', 'hot', 'gps', 'src', 'knock', 'boot'])
+for (const id of ['prev', 'next', 'demo', 'can', 'hot', 'gps', 'src', 'knock', 'boot', 'turn', 'high', 'road'])
   document.getElementById(id).onclick = () => T.key(id);
 addEventListener('keydown', e => {
-  const m = { ArrowLeft: 'prev', ArrowRight: 'next', d: 'demo', D: 'demo', c: 'can', C: 'can', h: 'hot', H: 'hot', k: 'knock', K: 'knock', b: 'boot', B: 'boot', g: 'gps', G: 'gps', s: 'src', S: 'src' }[e.key];
+  const m = { ArrowLeft: 'prev', ArrowRight: 'next', d: 'demo', D: 'demo', c: 'can', C: 'can', h: 'hot', H: 'hot', k: 'knock', K: 'knock', b: 'boot', B: 'boot', g: 'gps', G: 'gps', s: 'src', S: 'src', t: 'turn', T: 'turn', l: 'high', L: 'high', m: 'road', M: 'road' }[e.key];
   if (m) { e.preventDefault(); T.key(m); }
 });
 
@@ -169,7 +178,8 @@ addEventListener('keydown', e => {
 function fit() {
   const st = document.getElementById('stage'), bz = cv.parentElement;
   const pad = bz.offsetWidth - bz.clientWidth + parseFloat(getComputedStyle(bz).paddingLeft) * 2;
-  const w = Math.max(160, Math.min(st.clientWidth - pad, (st.clientHeight - pad) * 1024 / 600, 1400));
+  const narrow = matchMedia('(max-width: 760px)').matches;   /* telefonis kõrgus ei piira – leht kerib */
+  const w = Math.max(160, Math.min(st.clientWidth - pad, narrow ? 1e9 : (st.clientHeight - pad) * 1024 / 600, 1400));
   cv.style.width = Math.floor(w) + 'px';
   cv.style.height = Math.floor(w * 600 / 1024) + 'px';
 }

@@ -1,5 +1,19 @@
 # Muudatused
 
+## v0.5 – 2026-11-21
+- **Tänavarežiim** (SEADED → VAATED → Režiim: AINULT RADA / TÄNAV): ANALOOG ja TÄNAV vaates suunatuled (rohelised
+  nooled), kaugtuled (sinine märk) ja läbisõit. Tuled tulevad otse plaadi GPIO-desse optroni kaudu (GPIO2/3/4),
+  vt `docs/tanavareziim.md`. AINULT RADA režiimis on vaated samad nagu varem.
+- **Vaadete uued nimed:** KELLAD → **TÄNAV**, TÄNAV → **RACE 2**, KAAR → **KIIRUS**, KLASSIKA → **ANALOOG**
+  (järjekord ja peidetud vaated jäävad samaks).
+- Simulaator: nupud **Suunatuli** (T), **Kaugtuled** (L) ja **Režiim** AINULT RADA / TÄNAV (M); nupud kahes reas,
+  telefonis mitmes reas ja leht kerib.
+- **Pinnid vaikimisi seadistatud** plaadi päise järgi: suunatuled/kaugtuled GPIO2/3/4, **GPS GPIO32 (RX) / GPIO33 (TX)**
+  (varem vaikimisi väljas). README-s päise joonis (`docs/pinout.svg`) ja kogu ühenduste tabel.
+- Uued juhendid: `docs/CAN-uhendus.md` (MaxxECU CAN ühendamine), `docs/tanavareziim.md` koos PC817 plaadi ühenduste
+  joonisega (`docs/pc817-uhendus.svg`) ja `docs/R33-GTS-t.md` (README-s viited).
+- GPS-i RX pinnil on sisemine pull-up (ilma moodulita ei loe õhus rippuv pinn müra).
+
 ## v0.4.6 – 2026-11-20
 - KELLAD vaate keskosa (kellad, keskmine tulp, VESI/PAAK ribad) on kõrgemal: vahe olekulippude ja alumise
   reaga on võrdne. Hoiatusriba on selles vaates veidi kõrgemal, et see ei kataks ÕLI rida.

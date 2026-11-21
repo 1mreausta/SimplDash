@@ -40,9 +40,28 @@ menu "SimplDash"
             Nupp ühendab GPIO maaga (GND); sisemine pull-up on sees.
             Lühike vajutus = järgmine vaade.
 
+    config SIMPLDASH_LAMP_LEFT_GPIO
+        int "Vasaku suunatule GPIO (-1 = pole)"
+        default 2
+        range -1 54
+        help
+            Tänavarežiim: auto suunatule 12 V signaal optroni (nt PC817) kaudu. Optroni väljund
+            ühendab GPIO maaga (GND), kui tuli põleb; sisemine pull-up on sees. Vt docs/tanavareziim.md.
+            Vali vaba pinn plaadi päisest.
+
+    config SIMPLDASH_LAMP_RIGHT_GPIO
+        int "Parema suunatule GPIO (-1 = pole)"
+        default 3
+        range -1 54
+
+    config SIMPLDASH_LAMP_HIGH_GPIO
+        int "Kaugtulede GPIO (-1 = pole)"
+        default 4
+        range -1 54
+
     config SIMPLDASH_GPS_RX_GPIO
         int "GPS RX GPIO (<- GPS mooduli TX), -1 = GPS puudub"
-        default -1
+        default 32
         range -1 54
         help
             Nt Ebyte E108-GN04G-TTL: mooduli TX juhe sellesse GPIO-sse (3,3 V loogika).
@@ -50,7 +69,7 @@ menu "SimplDash"
 
     config SIMPLDASH_GPS_TX_GPIO
         int "GPS TX GPIO (-> GPS mooduli RX), -1 = ei kasuta"
-        default -1
+        default 33
         range -1 54
         help
             Soovitatav: ilma selleta ei saa dash moodulit 10 Hz peale seadistada

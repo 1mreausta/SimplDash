@@ -5,6 +5,7 @@
 #include "can_rx.h"
 #include "dash_ui.h"
 #include "demo.h"
+#include "lamps.h"
 #include "dev_display_lcd.h"
 #include "gps.h"
 #include "logger.h"
@@ -180,6 +181,7 @@ void app_main(void)
 #if CONFIG_SIMPLDASH_DEMO_ON_BOOT
     demo_set_enabled(true);
 #endif
+    lamps_start();  /* suunatuled / kaugtuled (kui pinnid menuconfigis määratud) */
     gps_start();  /* ainult kui SIMPLDASH_GPS_RX_GPIO >= 0 */
     logger_start();     /* SD-kaart (TF-pesa); kaardi võib ka hiljem sisse panna */
     wifi_web_start();   /* pääsupunkt + veebileht (kui seadetes lubatud) */

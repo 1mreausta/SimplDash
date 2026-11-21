@@ -33,7 +33,7 @@ Paagi andur on ühendatud ainult paneeliga.
 Märgutuled: õlirõhk, käsipidur / pidurivedelik, ABS, SRS, HICAS, turvavöö, uksed, kaugtuled, suunatuled.
 
 - Õlirõhu ja vee hoiatused on SimplDashis olemas.
-- **Kaugtulede ja suunatulede märgutuld dashis praegu ei ole** (vt allpool).
+- Kaugtulede ja suunatulede märgutuled ning läbisõit on dashi tänavarežiimis (vt allpool).
 - ABS, SRS ja pidurivedeliku tule kadumisel ei näe enam nende süsteemide vigu – vajadusel lisa eraldi LED-id.
 
 ## Seadus ja ülevaatus
@@ -43,16 +43,8 @@ Märgutuled: õlirõhk, käsipidur / pidurivedelik, ABS, SRS, HICAS, turvavöö,
 - Ülevaatusel kirjutatakse üles läbisõit. Pane enne paneeli eemaldamist kirja vana paneeli lõpunäit ja sisesta
   see dashi odomeetrisse (telefoni veebileht → läbisõit).
 
-## Plaan: suunatuled ja kaugtuled dashis
+## Suunatuled, kaugtuled ja läbisõit dashis
 
-Signaali saab dashini viia kahel moel:
-
-1. **Otse dashi plaadile:** suunatule juhtmed (12 V) läbi optroni (nt PC817) või pingejaguri + kaitse plaadi
-   vabadesse GPIO-desse (3,3 V). Pinnid `idf.py menuconfig` kaudu. ECU-st ei sõltu.
-2. **MaxxECU kaudu:** suunatuled ECU vabadesse digitaalsisenditesse, MTune-is saatmine CAN-kaadris, dash loeb
-   kaadri (ID ja bitid `dash_config.h` failis). Dashi juurde lisajuhtmeid ei tule, aga kasutab kaks ECU sisendit.
-
-Ekraanil: rohelised nooled ◀ ▶ ülanurkades kõigis vaadetes; dash näitab signaali täpselt nii, nagu see tuleb
-(vilkumise teeb auto relee, ohutuled = mõlemad korraga). Kaugtulede märgutuli samal põhimõttel.
-
-Veel tegemata – JC1060P470C pistiku vabad GPIO-d tuleb enne üle kontrollida.
+SimplDashis on **tänavarežiim** (SEADED → VAATED → Režiim = TÄNAV): ANALOOG ja TÄNAV vaates suunatuled, kaugtuled ja
+läbisõit. Suunatulede ja kaugtulede signaal võetakse originaal paneeli pistikust optroni kaudu otse dashi plaadile –
+paneeli pistikut ei lõigata, nii et originaal paneeli saab tagasi panna. Vt [tanavareziim.md](tanavareziim.md).

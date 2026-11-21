@@ -48,6 +48,7 @@ typedef struct dash_state_s {
     bool  gps_ok;       /* GPS on ühendatud (NMEA saabub) */
     bool  speed_gps;    /* d.v[SIG_SPEED] tuleb praegu GPS-ist */
     int   speed_src;    /* DASH_SPEED_ECU / _GPS / _AUTO */
+    uint8_t lamps;      /* LAMP_* (lamps.h): suunatuled, kaugtuled */
     int64_t now_us;
 } dash_state_t;
 
@@ -126,3 +127,14 @@ typedef struct {
 /* Loob rea, mille keskpunkt on (cx, y) */
 void dash_flags_create(dash_flags_t *f, lv_obj_t *parent, int cx, int y);
 void dash_flags_update(dash_flags_t *f, const dash_state_t *s);
+
+/* Tänavarežiimi märgutuled (SEADED → Režiim = TÄNAV): nooled (rohelised) ja kaugtuled (sinine).
+ * h = kõrgus, laius h × 1,3; *_x = vasak serv. AINULT RADA režiimis peidus. */
+typedef struct {
+    lv_obj_t *o[3];
+    int8_t    on[3], shown;
+} dash_lamps_t;
+void dash_lamps_create(dash_lamps_t *l, lv_obj_t *parent, int left_x, int right_x, int high_x, int y, int h);
+void dash_lamps_update(dash_lamps_t *l, const dash_state_t *s);
+/* Läbisõit tekstina: "123 456 km" */
+void dash_fmt_odo(char *buf, size_t cap);

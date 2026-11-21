@@ -1,5 +1,5 @@
 /*
- * Vaade KELLAD: kaks ümarat kella (vasakul pöörded + käik, paremal kiirus + ülerõhk),
+ * Vaade TÄNAV: kaks ümarat kella (vasakul pöörded + käik, paremal kiirus + ülerõhk),
  * nende vahel põhinäidud ja kaks vertikaalset riba, all 4 näidikut.
  */
 #include <math.h>
@@ -53,6 +53,9 @@ static struct {
     dash_tile_obj_t bottom[N_BOTTOM];
     dash_flags_t flags;
     dash_tile_t boost_cfg;   /* ühikud seadete järgi (bar/psi) */
+    dash_lamps_t lamps;      /* tänavarežiim: suunatuled, kaugtuled */
+    lv_obj_t *odo;           /* tänavarežiim: läbisõit keskmise tulba all */
+    char      odo_txt[20];
 } p;
 
 static lv_style_t st_red_ind, st_red_items;
@@ -241,6 +244,11 @@ static void create(lv_obj_t *scr)
 
     p.rev_limit = DASH_RPM_MAX - 500;
     tach_set_limit(p.rev_limit);
+
+    /* tänavarežiim: nooled ülanurkades (kella ja GPS-i all), kaugtuled vasaku noole kõrval */
+    dash_lamps_create(&p.lamps, scr, 20, W - 20 - 52, 84, 56, 40);
+    p.odo = centered_label(scr, 20, C_DIM, col_x + 8, 452, col_w - 16);
+    lv_obj_set_hidden(p.odo, true);
 }
 
 static void update(const dash_state_t *s)
@@ -288,6 +296,12 @@ static void update(const dash_state_t *s)
     vbar_update(&p.br, s);
     for (size_t i = 0; i < N_BOTTOM; i++) dash_tile_update(&p.bottom[i], s);
     dash_flags_update(&p.flags, s);
+    dash_lamps_update(&p.lamps, s);
+    lv_obj_set_hidden(p.odo, !g_set.road_mode);
+    if (g_set.road_mode) {
+        dash_fmt_odo(buf, sizeof(buf));
+        dash_set_text_if(p.odo, p.odo_txt, sizeof(p.odo_txt), buf);
+    }
 }
 
-const dash_page_t page_gauges = { "KELLAD", 40, create, update, NULL, NULL, 938, 4, 16, 4, 856, 4 };
+const dash_page_t page_gauges = { "TÄNAV", 40, create, update, NULL, NULL, 938, 4, 16, 4, 856, 4 };

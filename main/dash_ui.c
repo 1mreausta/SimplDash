@@ -13,6 +13,7 @@
 #include "dash_common.h"
 #include "demo.h"
 #include "diag.h"
+#include "lamps.h"
 #include "logger.h"
 #include "settings.h"
 #include "stats.h"
@@ -366,6 +367,7 @@ static void ui_tick(lv_timer_t *tm)
         ui.rev_limit = (int)s.d.v[SIG_REVLIMIT_RPM];
     }
     s.rev_limit = ui.rev_limit;
+    s.lamps = lamps_get();
     s.now_us = now;
 
     /* GPS ja kiiruse allikas */

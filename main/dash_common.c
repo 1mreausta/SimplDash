@@ -1,6 +1,7 @@
 #include "dash_common.h"
 #include <stdio.h>
 #include <string.h>
+#include "stats.h"
 
 /* Font (Barlow Condensed Bold, OFL) manustatud püsivarasse */
 #ifdef DASH_FONT_C_ARRAY
@@ -324,4 +325,90 @@ lv_obj_t *dash_panel(lv_obj_t *parent, int x, int w, const char *title)
     lv_obj_t *t = dash_label(b, 17, C_DIM, title);
     lv_obj_set_pos(t, 14, 8);
     return b;
+}
+
+/* --- tänavarežiimi märgutuled ------------------------------------------- */
+#define C_LAMP_OFF lv_color_hex(0x1A1E24)
+
+static void lamp_draw(lv_event_t *e)
+{
+    lv_obj_t *o = lv_event_get_target_obj(e);
+    lv_layer_t *layer = lv_event_get_layer(e);
+    lv_area_t a;
+    lv_obj_get_coords(o, &a);
+    const int x = a.x1, y = a.y1, w = lv_area_get_width(&a), h = lv_area_get_height(&a);
+    const int kind = (int)(intptr_t)lv_obj_get_user_data(o);
+    lv_draw_rect_dsc_t r;
+    lv_draw_rect_dsc_init(&r);
+    r.bg_color = lv_obj_get_style_text_color(o, 0);
+    if (kind < 2) {   /* nool: kolmnurk + vars; 0 = vasakule, 1 = paremale */
+        lv_draw_triangle_dsc_t t;
+        lv_draw_triangle_dsc_init(&t);
+        t.color = r.bg_color;
+        const int hw = h * 6 / 10, sh = h * 42 / 100;
+        const int tip = kind == 0 ? x : x + w - 1, base = kind == 0 ? x + hw : x + w - 1 - hw;
+        t.p[0].x = tip;  t.p[0].y = y + h / 2;
+        t.p[1].x = base; t.p[1].y = y;
+        t.p[2].x = base; t.p[2].y = y + h - 1;
+        lv_draw_triangle(layer, &t);
+        lv_area_t s = { kind == 0 ? base : x, y + (h - sh) / 2, kind == 0 ? x + w - 1 : base, y + (h - sh) / 2 + sh - 1 };
+        lv_draw_rect(layer, &r, &s);
+    } else {          /* kaugtuled: lamp (ümar vasakul, sirge paremal) + 4 kiirt paremale */
+        const int dw = h * 8 / 10;
+        lv_area_t d = { x, y, x + dw - 1, y + h - 1 };
+        r.radius = LV_RADIUS_CIRCLE;
+        lv_draw_rect(layer, &r, &d);
+        r.radius = 0;
+        d.x1 = x + dw / 2;
+        lv_draw_rect(layer, &r, &d);
+        const int th = h / 8 > 2 ? h / 8 : 2;
+        for (int i = 0; i < 4; i++) {
+            const int ry = y + h * (2 * i + 1) / 8 - th / 2;
+            lv_area_t k = { x + dw + h / 8, ry, x + w - 1, ry + th - 1 };
+            lv_draw_rect(layer, &r, &k);
+        }
+    }
+}
+
+void dash_lamps_create(dash_lamps_t *l, lv_obj_t *parent, int left_x, int right_x, int high_x, int y, int h)
+{
+    const int xs[3] = { left_x, right_x, high_x };
+    for (int i = 0; i < 3; i++) {
+        lv_obj_t *o = lv_obj_create(parent);
+        lv_obj_remove_style_all(o);
+        lv_obj_set_pos(o, xs[i], y);
+        lv_obj_set_size(o, h * 13 / 10, h);
+        lv_obj_set_user_data(o, (void *)(intptr_t)i);
+        lv_obj_set_style_text_color(o, C_LAMP_OFF, 0);
+        lv_obj_set_clickable(o, false);
+        lv_obj_add_event_cb(o, lamp_draw, LV_EVENT_DRAW_MAIN, NULL);
+        lv_obj_set_hidden(o, true);
+        l->o[i] = o;
+        l->on[i] = 0;
+    }
+    l->shown = 0;
+}
+
+void dash_lamps_update(dash_lamps_t *l, const dash_state_t *s)
+{
+    const int8_t show = g_set.road_mode != 0;
+    if (show != l->shown) {
+        for (int i = 0; i < 3; i++) lv_obj_set_hidden(l->o[i], !show);
+        l->shown = show;
+    }
+    if (!show) return;
+    static const uint32_t COL[3] = { 0x22E06B, 0x22E06B, 0x2F7BFF };
+    for (int i = 0; i < 3; i++) {
+        const int8_t on = (s->lamps >> i) & 1;
+        if (on == l->on[i]) continue;
+        lv_obj_set_style_text_color(l->o[i], on ? lv_color_hex(COL[i]) : C_LAMP_OFF, 0);
+        l->on[i] = on;
+    }
+}
+
+void dash_fmt_odo(char *buf, size_t cap)
+{
+    const long km = (long)(stats_get()->odo_m / 1000);
+    if (km >= 1000) snprintf(buf, cap, "%ld %03ld km", km / 1000, km % 1000);
+    else snprintf(buf, cap, "%ld km", km);
 }
