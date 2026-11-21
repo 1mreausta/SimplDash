@@ -20,21 +20,31 @@ phone (Wi-Fi) settings with over-the-air updates, and buttons that send CAN comm
 - MaxxECU lisakanalid ja nupud, mis saadavad ECU-le käske (launch, anti-lag, seade, boost, veojõud);
 - simulaator brauseris ja arvutis – kõike saab proovida ilma plaadita.
 
+**Vaated** (järjekord nagu dashil):
+
 | RACE | TÄNAV |
 |---|---|
 | ![RACE](docs/1_race.png) | ![TÄNAV](docs/1_tanav.png) |
 | **KIIRUS** | **RACE 2** |
 | ![KIIRUS](docs/1_kiirus.png) | ![RACE 2](docs/1_race2.png) |
-| **0–100** (GPS) | **RING** (GPS) |
-| ![0–100](docs/1_0-100.png) | ![RING](docs/1_ring.png) |
 | **ANALOOG** | **ANDMED** |
 | ![ANALOOG](docs/1_analoog.png) | ![ANDMED](docs/1_andmed.png) |
-| **RADA** (GPS) | **SEADED** (ECU nupud, seaded, sõit, hoiatused) |
-| ![RADA](docs/1_rada.png) | ![SEADED](docs/1_seaded.png) |
 | **ANALOOG** (tänavarežiim) | **TÄNAV** (tänavarežiim) |
 | ![ANALOOG tänavarežiimis](docs/4_analoog_tanavareziim.png) | ![TÄNAV tänavarežiimis](docs/4_tanav_tanavareziim.png) |
-| **Suur hoiatus** | |
-| ![Suur hoiatus](docs/2_suur_hoiatus.png) | |
+
+**GPS-iga** (vaated on nähtavad ainult siis, kui GPS on ühendatud):
+
+| 0–100 | RING |
+|---|---|
+| ![0–100](docs/1_0-100.png) | ![RING](docs/1_ring.png) |
+| **RADA** | |
+| ![RADA](docs/1_rada.png) | |
+
+**Seaded ja hoiatused:**
+
+| SEADED (ECU nupud, seaded, sõit, hoiatused) | Suur hoiatus |
+|---|---|
+| ![SEADED](docs/1_seaded.png) | ![Suur hoiatus](docs/2_suur_hoiatus.png) |
 
 MaxxECU → CAN (500 kbit/s) → SN65HVD230 → ESP32-P4 TWAI → LVGL dash.
 Käivitub umbes sekundiga; väljalülitamisel pole midagi, mis võiks rikki minna.
