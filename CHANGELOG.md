@@ -1,5 +1,9 @@
 # Muudatused
 
+## v0.5.1 – 2026-11-21
+- Vaadete järjekord: RACE → RACE 2 → TÄNAV → ANALOOG → KIIRUS (siis GPS-i vaated, ANDMED, SEADED).
+  Peidetud vaated ja viimati avatud vaade jäävad pärast uuendust samaks (salvestatakse vaate püsiva numbriga).
+
 ## v0.5 – 2026-11-21
 - **Tänavarežiim** (SEADED → VAATED → Režiim: AINULT RADA / TÄNAV): ANALOOG ja TÄNAV vaates suunatuled (rohelised
   nooled), kaugtuled (sinine märk) ja läbisõit. Tuled tulevad otse plaadi GPIO-desse optroni kaudu (GPIO2/3/4),

@@ -81,7 +81,8 @@ typedef struct {
 } set_item_t;
 
 /* Vaadete nimed (SEADED → vaadete peitmine). Kutsu enne settings_items-i. */
-void settings_set_pages(const char *const *names, int n);
+/* ids[i] = vaate püsiv number (peitmise bitt pages_off-is ja veebi võti page<id>) */
+void settings_set_pages(const char *const *names, const uint8_t *ids, int n);
 /* Ühikute teisendus kuvamiseks (praeguste seadete järgi) */
 float settings_disp(unit_kind_t k, float si);
 float settings_from_disp(unit_kind_t k, float v);

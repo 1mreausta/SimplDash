@@ -158,6 +158,27 @@ static void test_store_grow(void)
 }
 
 /* veebi sisend: vigane läbisõit ja tühi Wi-Fi nimi lükatakse tagasi */
+/* vaate peitmine käib vaate püsiva numbri järgi (järjekorra muutus ei muuda peidetud vaateid) */
+static void test_page_ids(void)
+{
+    static const char *names[] = { "RACE", "RACE 2", "TÄNAV", "SEADED" };
+    static const uint8_t ids[] = { 0, 3, 1, 9 };
+    settings_set_pages(names, ids, 4);
+    const set_item_t *it;
+    int n = settings_items(&it);
+    const set_item_t *r2 = NULL;
+    bool settings_item = false;
+    for (int i = 0; i < n; i++) {
+        if (it[i].type == ST_PAGE && !strcmp(it[i].label, "RACE 2")) r2 = &it[i];
+        if (it[i].type == ST_PAGE && !strcmp(it[i].label, "SEADED")) settings_item = true;
+    }
+    CHECK(r2 && !strcmp(r2->key, "page3") && !settings_item);
+    g_set.pages_off = 0;
+    CHECK(r2 && settings_item_set(r2, "0") && g_set.pages_off == (1u << 3));   /* peidus = bitt 3, mitte 1 */
+    g_set.pages_off = 0;
+    settings_set_pages(NULL, NULL, 0);
+}
+
 static void test_road_mode(void)
 {
     static web_resp_t r;
@@ -217,6 +238,7 @@ int main(void)
     test_store_grow();
     test_web_input();
     test_road_mode();
+    test_page_ids();
     puts(fails ? "TESTID EBAÕNNESTUSID" : "kõik testid OK");
     return fails != 0;
 }

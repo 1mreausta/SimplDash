@@ -113,7 +113,7 @@ Iga [reliisi](https://github.com/1mreausta/SimplDash/releases) juures on kaks fa
   Flash Address `0x0`, vali fail `simpldash-vX.Y.bin` → Program; või
 - **käsurealt:** `pip install esptool`, siis
   ```bash
-  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.5.bin
+  esptool --chip esp32p4 write-flash 0x0 simpldash-v0.5.1.bin
   ```
 
 > **v0.3 või vanemalt v0.4-le: kindlasti USB kaudu, terve fail aadressile 0x0.** Versioonis 0.4 muutus välkmälu
@@ -201,7 +201,7 @@ Simulaatoris: nupud **GPS ühendatud** (G) ja **Kiirus: AUTO/ECU/GPS** (S); demo
 - **Süüte sisselülitamisel** näidatakse 2 s SimplDashi logo; shift-light'id süttivad järjest (tulede test) ja
   dash heleneb nähtavale samamoodi nagu vaadete vahetusel (`DASH_BOOT_MS`, 0 = kohe dash).
   Logo pilt tehakse fondist: `python3 tools/logo/make_boot_logo.py` → `main/boot_logo.c`.
-- **Libista vasakule / paremale** – järgmine / eelmine vaade (RACE → TÄNAV → KIIRUS → RACE 2 → ANALOOG → ANDMED → SEADED;
+- **Libista vasakule / paremale** – järgmine / eelmine vaade (RACE → RACE 2 → TÄNAV → ANALOOG → KIIRUS → ANDMED → SEADED;
   GPS-iga lisaks 0–100, RING ja RADA). Vaateid saab peita: SEADED → VAATED.
   Vahetus on sujuv (tumeneb ja heleneb, 0,3 s – `DASH_PAGE_FADE_MS`, 0 = kohe). Vaate nimi näidatakse hetkeks all keskel; viimane vaade jäetakse meelde ka pärast väljalülitamist.
 - **Füüsiline nupp** (valikuline, nt roolil) – järgmine vaade. Nupp GPIO ja GND vahele,

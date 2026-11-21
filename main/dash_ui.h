@@ -4,9 +4,10 @@
 typedef struct {
     /* Kutsutakse, kui kasutaja puudutusega heledust vahetab (0–100 %) */
     void (*on_brightness)(uint8_t percent);
-    /* Kutsutakse, kui vaade vahetub (nt et see NVS-i meelde jätta). Võib olla NULL. */
+    /* Kutsutakse, kui vaade vahetub (nt et see NVS-i meelde jätta). Võib olla NULL.
+     * page = vaate püsiv number (PAGE_ID dash_ui.c-s), mitte koht järjekorras. */
     void (*on_page)(int page);
-    /* Millise vaatega alustada */
+    /* Millise vaatega alustada (püsiv number, nagu on_page) */
     int start_page;
 } dash_ui_cfg_t;
 

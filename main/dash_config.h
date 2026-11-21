@@ -106,10 +106,10 @@ typedef struct {
  * Vaheta: libista ekraanil vasakule/paremale või vajuta lisanuppu
  * (idf.py menuconfig → SimplDash → vaate nupu GPIO). Viimane vaade jäetakse meelde.
  *   0 RACE    – shift lightid, segmenttahhomeeter, 14 näidikut
- *   1 TÄNAV   – kaks ümarat kella (pöörded + kiirus), keskel põhinäidud
- *   2 KIIRUS  – suur kaartahhomeeter, kiirus keskel, 6 näidikut külgedel
- *   3 RACE 2  – kaardus astmeline tahhomeeter, suur käik sinises kumas, segmentribad
- *   4 ANALOOG – osutitega kellad: vesi, kütusekulu | spido, tahho | õlirõhk
+ *   1 RACE 2  – kaardus astmeline tahhomeeter, suur käik sinises kumas, segmentribad
+ *   2 TÄNAV   – kaks ümarat kella (pöörded + kiirus), keskel põhinäidud
+ *   3 ANALOOG – osutitega kellad: vesi, kütusekulu | spido, tahho | õlirõhk
+ *   4 KIIRUS  – suur kaartahhomeeter, kiirus keskel, 6 näidikut külgedel
  *   5 0–100   – kiirendusaeg (ainult GPS-iga)
  *   6 RING    – ringiaja taimer, vahe parimaga, sektorid (ainult GPS-iga)
  *   7 RADA    – raja kaart ja sektorite tabel (ainult GPS-iga)

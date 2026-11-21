@@ -20,10 +20,14 @@
 #include "esp_timer.h"
 #include "version.h"
 
-static const dash_page_t *const PAGES[] = { &page_race, &page_gauges, &page_sweep, &page_street,
-                                             &page_classic, &page_accel, &page_lap, &page_track,
+static const dash_page_t *const PAGES[] = { &page_race, &page_street, &page_gauges, &page_classic,
+                                             &page_sweep, &page_accel, &page_lap, &page_track,
                                              &page_data, &page_settings };
 #define N_PAGES ((int)(sizeof(PAGES) / sizeof(PAGES[0])))
+/* Vaate püsiv number (= järjekord v0.5-s): sellega on püsimälus peidetud vaated (pages_off bitid) ja viimane vaade,
+ * et järjekorra muutmine ei muudaks kasutaja valikuid. Uus vaade saab järgmise vaba numbri. */
+static const uint8_t PAGE_ID[] = { 0, 3, 1, 4, 2, 5, 6, 7, 8, 9 };
+_Static_assert(sizeof(PAGE_ID) == sizeof(PAGES) / sizeof(PAGES[0]), "PAGE_ID iga vaate kohta");
 _Static_assert(N_PAGES <= 16, "vaadete peitmise bitimask on 16-bitine");
 
 static const uint8_t BRIGHT[] = DASH_BRIGHTNESS_LEVELS;
@@ -92,7 +96,7 @@ static void open_page(int page, bool notify)
     }
     if (changed && notify) {
         show_toast();
-        if (ui.cfg.on_page) ui.cfg.on_page(page);
+        if (ui.cfg.on_page) ui.cfg.on_page(PAGE_ID[page]);
     }
 }
 
@@ -382,7 +386,7 @@ static void ui_tick(lv_timer_t *tm)
     }
     for (int i = 0; i < N_PAGES; i++) {
         ui.avail[i] = (!PAGES[i]->available || PAGES[i]->available(&s)) &&
-                      (!((g_set.pages_off >> i) & 1) || PAGES[i] == &page_settings);   /* SEADED ei peitu */
+                      (!((g_set.pages_off >> PAGE_ID[i]) & 1) || PAGES[i] == &page_settings);   /* SEADED ei peitu */
     }
     /* GPS-vaade, aga GPS kadus (või ei tulnud 15 s jooksul pärast käivitust) → esimene vaade */
     if (!ui.booting && !ui.avail[target_page()] &&
@@ -466,7 +470,7 @@ void dash_ui_create(const dash_ui_cfg_t *cfg)
     memset(&ui, 0, sizeof(ui));
     static const char *names[N_PAGES];
     for (int i = 0; i < N_PAGES; i++) names[i] = PAGES[i]->name;
-    settings_set_pages(names, N_PAGES);
+    settings_set_pages(names, PAGE_ID, N_PAGES);
     settings_init();
     stats_init();
     alarms_init();
@@ -575,7 +579,9 @@ void dash_ui_create(const dash_ui_cfg_t *cfg)
     lv_obj_set_hidden(ui.toast, true);
 
     ui.page = -1;
-    open_page(ui.cfg.start_page >= 0 && ui.cfg.start_page < N_PAGES ? ui.cfg.start_page : 0, false);
+    int start = 0;
+    for (int i = 0; i < N_PAGES; i++) if (PAGE_ID[i] == ui.cfg.start_page) start = i;
+    open_page(start, false);
 
     if (DASH_BOOT_MS > 0) boot_create(scr);  /* kõige peal */
 

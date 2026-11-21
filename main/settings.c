@@ -21,6 +21,7 @@ static bool s_dirty;
 static set_item_t s_items[MAX_ITEMS];
 static int s_n;
 static const char *const *s_page_names;
+static const uint8_t *s_page_ids;
 static int s_n_pages;
 
 static void defaults(dash_settings_t *c)
@@ -58,9 +59,10 @@ static void defaults(dash_settings_t *c)
     c->road_mode = DASH_ROAD_MODE;
 }
 
-void settings_set_pages(const char *const *names, int n)
+void settings_set_pages(const char *const *names, const uint8_t *ids, int n)
 {
     s_page_names = names;
+    s_page_ids = ids;
     s_n_pages = n;
 }
 
@@ -207,9 +209,9 @@ static void build(void)
         for (int i = 0; i < s_n_pages && i < 16; i++) {
             if (!strcmp(s_page_names[i], "SEADED")) continue;   /* SEADED ei saa peita */
             char key[24];
-            snprintf(key, sizeof(key), "page%d", i);
+            snprintf(key, sizeof(key), "page%d", s_page_ids[i]);
             it = add(key, s_page_names[i], ST_PAGE, NULL);
-            it->bit = (uint8_t)i;
+            it->bit = s_page_ids[i];
             it->max = 1;
             it->step = 1;
         }

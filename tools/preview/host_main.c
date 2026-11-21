@@ -77,7 +77,7 @@ static void run(int ms){
 }
 /* hoia vilkumine "sees" faasis ja oota, kuni vaate nime teade kaob */
 static void settle(void){ run(1400); while(((g_fake_time_us/250000)%2)==1) run(5); while(((g_fake_time_us/250000)%2)==0) run(5); run(60); }
-static const char *NAMES[] = { "race", "tanav", "kiirus", "race2", "analoog", "0-100", "ring", "rada", "andmed", "seaded" };
+static const char *NAMES[] = { "race", "race2", "tanav", "analoog", "kiirus", "0-100", "ring", "rada", "andmed", "seaded" };
 _Static_assert(sizeof(NAMES) / sizeof(NAMES[0]) == 10, "vaadete nimed");
 int main(void){
   lv_init(); lv_tick_set_cb(tick);
@@ -141,8 +141,8 @@ int main(void){
   }
   /* tänavarežiim: vasak suunatuli (põleb) + kaugtuled, läbisõit */
   g_set.road_mode = 1; lamps_set_test(LAMP_LEFT | LAMP_HIGH); stats_set_odo_km(123456);
-  dash_ui_set_page(4); settle(); while ((g_fake_time_us / 333000) % 2) run(5); run(100); dump("4_analoog_tanavareziim.ppm");
-  dash_ui_set_page(1); settle(); while ((g_fake_time_us / 333000) % 2) run(5); run(100); dump("4_tanav_tanavareziim.ppm");
+  dash_ui_set_page(3); settle(); while ((g_fake_time_us / 333000) % 2) run(5); run(100); dump("4_analoog_tanavareziim.ppm");
+  dash_ui_set_page(2); settle(); while ((g_fake_time_us / 333000) % 2) run(5); run(100); dump("4_tanav_tanavareziim.ppm");
   g_set.road_mode = 0; lamps_set_test(0);
   /* shift + hoiatus (ribaga; suur täisekraani hoiatus eraldi pildil) */
   v[SIG_RPM]=7600; v[SIG_CLT]=109; v[SIG_GEAR]=4; flags = FLAG_LOGGING|FLAG_KNOCK;
@@ -154,7 +154,7 @@ int main(void){
     snprintf(fn, sizeof(fn), "2_%s_hoiatus.ppm", NAMES[p]); dump(fn);
   }
   /* vaate vahetuse teade */
-  dash_ui_set_page(1); run(100); dump("3_vahetus.ppm");
+  dash_ui_set_page(2); run(100); dump("3_vahetus.ppm");
 
   ecu_data_t s; maxxecu_snapshot(&s);
   printf("rpm=%.0f afr=%.2f boost=%.2f oil_press=%.1f flags=0x%x\n", s.v[SIG_RPM], s.v[SIG_AFR], s.v[SIG_BOOST_BAR], s.v[SIG_OIL_PRESS], s.flags);
