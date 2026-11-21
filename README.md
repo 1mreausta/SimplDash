@@ -58,6 +58,9 @@ Põhjalikumad juhendid:
 
 ![JC1060P470C päis ja SimplDashi ühendused](docs/pinout.svg)
 
+**Pistik päisele:** FC–FC 2×13 lintkaabel ja IDC26 vedruklemmidega moodul (nt ENMG EXTB-C26M-42D) – kõik juhtmed
+lähevad mooduli klemmidesse; detailid ja klemmide vastavuse tabel: [CAN juhend → 3.0](docs/CAN-uhendus.md#30-plaadi-päis--lintkaabel--klemmimoodul).
+
 Plaadi päis (2 × 13 pinni). Vasak tulp ülevalt alla on L1–L13, parem tulp R1–R13, nagu joonisel:
 
 | Pin | Signaal | Ühendus | |

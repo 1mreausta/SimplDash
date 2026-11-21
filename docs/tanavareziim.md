@@ -22,12 +22,16 @@ tuleb: vilkumise teeb auto suunatule relee, ohutuledega põlevad mõlemad nooled
 |---|---|
 | **PC817 optroni plaat, 4 kanalit** („817 Module, 4 Channel Isolation“, HY-M158) | vaja 3 kanalit, üks jääb varuks; 2-kanaliline ei piisa |
 | Juhtmed 0,25–0,5 mm², kahanevad sukad | auto poolt plaadini ja plaadist dashini |
+| *(kui veel pole)* FC–FC 2×13 lintkaabel + IDC26 klemmimoodul | dashi päise ühendamiseks – vt [CAN juhend → 3.0](CAN-uhendus.md#30-plaadi-päis--lintkaabel--klemmimoodul) |
 
 Plaat maksab ~1–3 €. Muud elektroonikat pole vaja: plaadil on igal kanalil sisendi takisti (3 kΩ) ja märgutuli.
 
 ## 2. Plaat ja ühendamine
 
 ![4-kanalilise PC817 plaadi ühendused](pc817-uhendus.svg)
+
+V1–V3 ja väljundi G lähevad dashi päise klemmimooduli klemmidesse, mis vastavad L5, L6, L7 ja L3
+(vastavuse tabel: [CAN juhend → 3.0](CAN-uhendus.md#30-plaadi-päis--lintkaabel--klemmimoodul)).
 
 Plaadi skeem (iga kanal eraldi):
 ```

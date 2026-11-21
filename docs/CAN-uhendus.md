@@ -10,7 +10,7 @@ MaxxECU CAN1: CANH (hall) / CANL (roosa) ── keerdpaar ───────�
 ```
 
 > **NB:** MaxxECU juhtmete värvid ja pinnid kontrolli oma ECU mudeli (Street / Sport / Race / PRO) pinout'ist
-> MaxxECU dokumentatsioonis. Plaadi pistiku tüüp kontrolli enne juhtmete ostmist.
+> MaxxECU dokumentatsioonis.
 
 ## 1. Ostunimekiri
 
@@ -22,11 +22,16 @@ MaxxECU CAN1: CANH (hall) / CANL (roosa) ── keerdpaar ───────�
 | 4 | **Kaitsmepesa + 3 A kaitse** | juhtmesse paigaldatav (inline), 12 V toite algusesse | 2–5 € |
 | 5 | **Keerdpaarjuhe CAN-i jaoks** | 2-soonega, 0,25–0,5 mm², soovitavalt varjestatud; pikkus ECU → dash + varu | 1–3 €/m |
 | 6 | **Toitejuhe** 0,5–0,75 mm² (punane + must) | süütevoolu (IGN) juhtmest muundurini | – |
-| 7 | **Ühendusjuhtmed plaadi päise jaoks** | sobiv pistik plaadi päisele (kontrolli tüüpi) või emane Dupont | 2–5 € |
-| 8 | Kahanevad sukad, jootetina, klemmid | – | – |
-| 9 | **Multimeeter** | takistuse ja pinge mõõtmiseks | – |
-| 10 | **USB-C kaabel** (andmetega) | püsivara esmakordseks laadimiseks | – |
-| 11 | *Valikuline:* microSD (FAT32), GPS moodul, nupp | vt README | – |
+| 7 | **Lintkaabel FC–FC, 2×13 (26P), 2,54 mm**, 10–20 cm | mõlemas otsas **emane** pistik (nt „2.54mm FC 26 Pin Gray Flat Ribbon Cable … For DC3 IDC Box Header“, 2x13Pin); mitte „male to female“ | 1–3 € |
+| 8 | **IDC26 klemmimoodul** vedruklemmidega | nt **ENMG EXTB-C26M-42D** (76,5 × 48,5 × 48 mm) või „IDC26 2x13 Male Header Breakout Board … Spring Terminal Block“; isane 2×13 ümbrisega pistik + 26 klemmi, DIN-liistule või kruvidega | 10–12 € |
+| 9 | Kahanevad sukad, jootetina, otsahülsid (0,25–0,5 mm²) | hülsid juhtmeotstele vedruklemmide jaoks | – |
+| 10 | **Multimeeter** | takistuse ja pinge mõõtmiseks | – |
+| 11 | **USB-C kaabel** (andmetega) | püsivara esmakordseks laadimiseks | – |
+| 12 | *Valikuline:* microSD (FAT32), GPS moodul, nupp, 4-kanaliline PC817 plaat (tänavarežiim) | vt README ja [tänavarežiim](tanavareziim.md) | – |
+
+Lintkaabel (7) ja klemmimoodul (8) on kõigi päise ühenduste jaoks (toide, CAN, GPS, nupp, suunatuled) – iga juhe läheb
+mooduli klemmi, mitte otse plaadi pinnile. Odavam, aga autos vähem kindel variant: emased Dupont juhtmed otse päisele
+(kinnita kuumliimiga).
 
 Kui MaxxECU juhtmestikus pole CAN-juhtmeid välja toodud, on vaja ka ECU pistiku klemme (vastavalt ECU mudelile)
 või MaxxECU CAN-juhtmestikku.
@@ -37,6 +42,33 @@ Jootekolb, juhtmekoorija, klemmitangid, multimeeter, sülearvuti MTune'iga, USB 
 ## 3. Ühendamine
 
 **Enne alustamist ühenda aku miinusklemm lahti.**
+
+### 3.0 Plaadi päis → lintkaabel → klemmimoodul
+1. Lintkaabli **punane triip = pinn 1**. Pane kaabli üks ots plaadi päisele, teine klemmimooduli pistikusse.
+   Mooduli pistik on ümbrisega (lõikega), nii et seal saab kaabel minna ainult ühtpidi.
+2. **Enne millegi ühendamist** (dash USB toitel, muu ühendamata) mõõda multimeetriga, millisesse **mooduli klemmi**
+   jõuab iga plaadi päise pinn, ja täida tabel. Kõige tähtsam: 3V3 (~3,3 V), 5V (~5 V) ja GND (0 V, takistus
+   GND-ga ~0 Ω). Kui 5V ja 3V3 tulevad valedesse klemmidesse, on kaabel plaadi otsas teistpidi – keera ümber.
+
+| Plaadi päis | Signaal | Mooduli klemm (mõõda ja kirjuta) |
+|---|---|---|
+| R1 | 5V ← muunduri OUT+ | |
+| R3 | GND ← muunduri OUT− | |
+| R6 | GPIO46 ← CAN CRX | |
+| R7 | GPIO45 → CAN CTX | |
+| R8 | GND — CAN GND | |
+| R9 | 3V3 → CAN 3V3 | |
+| R5 | GPIO47 — vaate nupp | |
+| R2 | 5V → GPS VCC | |
+| L10 | GPIO32 ← GPS TX | |
+| L11 | GPIO33 → GPS RX | |
+| L3 | GND — PC817 väljundi G, GPS GND | |
+| L5 | GPIO2 ← PC817 V1 (vasak) | |
+| L6 | GPIO3 ← PC817 V2 (parem) | |
+| L7 | GPIO4 ← PC817 V3 (kaugtuled) | |
+
+3. Edaspidi (3.1, 3.2 ja teised juhendid) tähendab „plaadi päise R1“ jne seda **mooduli klemmi**, mis tabelis R1 kõrval on.
+4. Lintkaabel ja moodul kinnita nii, et kaabel ei rippuks (side või kuumliim pistiku juures) – vibratsioon.
 
 ### 3.1 Toide
 1. Leia **süütevoolu** juhe (12 V ainult süüde sees, IGN/ACC). Püsiv 12 V tühjendaks seisva auto aku.
