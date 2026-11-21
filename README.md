@@ -22,15 +22,15 @@ phone (Wi-Fi) settings with over-the-air updates, and buttons that send CAN comm
 
 **Vaated:**
 
-| RACE | TÄNAV |
+| RACE | RACE 2 |
 |---|---|
-| ![RACE](docs/1_race.png) | ![TÄNAV](docs/1_tanav.png) |
-| **KIIRUS** | **RACE 2** |
-| ![KIIRUS](docs/1_kiirus.png) | ![RACE 2](docs/1_race2.png) |
+| ![RACE](docs/1_race.png) | ![RACE 2](docs/1_race2.png) |
+| **TÄNAV** | **TÄNAV** (tänavarežiim) |
+| ![TÄNAV](docs/1_tanav.png) | ![TÄNAV tänavarežiimis](docs/4_tanav_tanavareziim.png) |
 | **ANALOOG** | **ANALOOG** (tänavarežiim) |
 | ![ANALOOG](docs/1_analoog.png) | ![ANALOOG tänavarežiimis](docs/4_analoog_tanavareziim.png) |
-| **TÄNAV** (tänavarežiim) | **ANDMED** |
-| ![TÄNAV tänavarežiimis](docs/4_tanav_tanavareziim.png) | ![ANDMED](docs/1_andmed.png) |
+| **KIIRUS** | **ANDMED** |
+| ![KIIRUS](docs/1_kiirus.png) | ![ANDMED](docs/1_andmed.png) |
 
 **GPS-iga** (vaated on nähtavad ainult siis, kui GPS on ühendatud):
 
